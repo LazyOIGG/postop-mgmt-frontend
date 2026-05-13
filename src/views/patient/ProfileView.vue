@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { healthService } from '@/services/health'
 import type { PatientProfile, HealthAssessmentResponse } from '@/types'
+import { User, Edit, ArrowRight } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -56,95 +57,120 @@ function logout() {
 <template>
   <div class="profile">
     <div class="profile-header glass-card stagger-item stagger-1">
-      <div class="avatar">{{ (profile.real_name || auth.user?.username || '?')[0] }}</div>
-      <div class="header-info">
+      <div class="avatar-group">
+        <div class="avatar">{{ (profile.real_name || auth.user?.username || '?')[0] }}</div>
         <h3>{{ profile.real_name || auth.user?.username || '用户' }}</h3>
         <p>{{ profile.health_stage || '术后康复中' }}</p>
       </div>
-      <button class="edit-btn" @click="startEdit">编辑</button>
+      <el-button
+        :icon="Edit"
+        round
+        @click="startEdit"
+      >
+        编辑档案
+      </el-button>
     </div>
 
     <div v-if="!editMode" class="profile-detail glass-card stagger-item stagger-2">
       <h4>基本信息</h4>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <span class="detail-label">性别</span>
-          <span class="detail-value">{{ profile.gender || '未设置' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">年龄</span>
-          <span class="detail-value">{{ profile.age || '未设置' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">身高</span>
-          <span class="detail-value">{{ profile.height ? profile.height + ' cm' : '未设置' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">体重</span>
-          <span class="detail-value">{{ profile.weight ? profile.weight + ' kg' : '未设置' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">血型</span>
-          <span class="detail-value">{{ profile.blood_type || '未设置' }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">电话</span>
-          <span class="detail-value">{{ profile.phone || '未设置' }}</span>
-        </div>
-      </div>
+      <el-descriptions :column="2" border size="small">
+        <el-descriptions-item label="性别">{{ profile.gender || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="年龄">{{ profile.age || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="身高">{{ profile.height ? profile.height + ' cm' : '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="体重">{{ profile.weight ? profile.weight + ' kg' : '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="血型">{{ profile.blood_type || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="电话">{{ profile.phone || '未设置' }}</el-descriptions-item>
+      </el-descriptions>
     </div>
 
     <div v-else class="profile-detail glass-card stagger-item stagger-2">
       <h4>编辑档案</h4>
-      <div class="edit-grid">
-        <div class="form-group">
-          <label>真实姓名</label>
-          <input v-model="editForm.real_name" class="field-input" />
+      <el-form :model="editForm" label-position="top" size="large">
+        <div class="edit-grid">
+          <el-form-item label="真实姓名">
+            <el-input v-model="editForm.real_name" />
+          </el-form-item>
+          <el-form-item label="性别">
+            <el-select v-model="editForm.gender" style="width: 100%">
+              <el-option label="男" value="男" />
+              <el-option label="女" value="女" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="年龄">
+            <el-input-number v-model="editForm.age" :min="0" :max="150" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="身高 (cm)">
+            <el-input-number v-model="editForm.height" :min="0" :max="250" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="体重 (kg)">
+            <el-input-number v-model="editForm.weight" :min="0" :max="300" :precision="1" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="血型">
+            <el-select v-model="editForm.blood_type" style="width: 100%">
+              <el-option label="A" value="A" />
+              <el-option label="B" value="B" />
+              <el-option label="AB" value="AB" />
+              <el-option label="O" value="O" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="电话">
+            <el-input v-model="editForm.phone" />
+          </el-form-item>
         </div>
-        <div class="form-group">
-          <label>性别</label>
-          <input v-model="editForm.gender" class="field-input" placeholder="男/女" />
+        <div class="edit-actions">
+          <el-button type="primary" size="large" @click="saveProfile">保存</el-button>
+          <el-button size="large" @click="editMode = false">取消</el-button>
         </div>
-        <div class="form-group">
-          <label>年龄</label>
-          <input v-model.number="editForm.age" type="number" class="field-input" />
-        </div>
-        <div class="form-group">
-          <label>身高 (cm)</label>
-          <input v-model.number="editForm.height" type="number" class="field-input" />
-        </div>
-        <div class="form-group">
-          <label>体重 (kg)</label>
-          <input v-model.number="editForm.weight" type="number" class="field-input" />
-        </div>
-        <div class="form-group">
-          <label>血型</label>
-          <input v-model="editForm.blood_type" class="field-input" />
-        </div>
-        <div class="form-group">
-          <label>电话</label>
-          <input v-model="editForm.phone" class="field-input" />
-        </div>
-      </div>
-      <div class="edit-actions">
-        <button class="save-btn" @click="saveProfile">保存</button>
-        <button class="cancel-btn" @click="editMode = false">取消</button>
-      </div>
+      </el-form>
     </div>
 
     <div class="section glass-card stagger-item stagger-3">
       <h4>评估历史</h4>
-      <div v-if="assessments.length === 0" class="empty">暂无评估记录</div>
-      <div v-for="a in assessments.slice(0, 5)" :key="a.session_id" class="assessment-item">
-        <div class="assessment-head">
-          <span class="risk-badge" :class="a.risk_level">{{ a.risk_level || '低风险' }}</span>
-          <span class="assessment-source">{{ a.source_type }}</span>
-        </div>
-        <p class="assessment-advice">{{ a.advice || a.input_text }}</p>
+      <div v-if="assessments.length === 0" class="empty">
+        <el-empty description="暂无评估记录" :image-size="60" />
       </div>
+      <el-collapse v-else accordion>
+        <el-collapse-item
+          v-for="a in assessments.slice(0, 5)"
+          :key="a.session_id"
+        >
+          <template #title>
+            <div class="collapse-title">
+              <el-tag
+                :type="a.risk_level === '高风险' || a.risk_level === 'high' ? 'danger' : a.risk_level === '中风险' || a.risk_level === 'medium' ? 'warning' : 'success'"
+                size="small"
+                round
+                effect="dark"
+              >
+                {{ a.risk_level || '低风险' }}
+              </el-tag>
+              <span class="collapse-source">{{ a.source_type || '系统评估' }}</span>
+            </div>
+          </template>
+          <p class="assessment-advice">{{ a.advice || a.input_text || '暂无详情' }}</p>
+          <div v-if="a.risk_reasons?.length" class="risk-reasons">
+            <el-tag
+              v-for="(reason, i) in a.risk_reasons"
+              :key="i"
+              size="small"
+              class="reason-tag"
+            >
+              {{ reason }}
+            </el-tag>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
-    <button class="logout-btn stagger-item stagger-4" @click="logout">退出登录</button>
+    <el-button
+      type="danger"
+      plain
+      size="large"
+      class="logout-btn stagger-item stagger-4"
+      @click="logout"
+    >
+      退出登录
+    </el-button>
   </div>
 </template>
 
@@ -159,47 +185,40 @@ function logout() {
 .profile-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 20px;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.avatar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
 }
 
 .avatar {
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 26px;
   font-family: var(--font-display);
-  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(122,154,126,0.3);
 }
 
-.header-info {
-  flex: 1;
-}
-
-.header-info h3 {
+.avatar-group h3 {
   font-size: 18px;
-  margin-bottom: 2px;
+  margin-top: 4px;
 }
 
-.header-info p {
+.avatar-group p {
   font-size: 13px;
   color: var(--color-text-secondary);
-}
-
-.edit-btn {
-  padding: 6px 16px;
-  border: 1px solid var(--color-primary);
-  border-radius: 20px;
-  background: transparent;
-  color: var(--color-primary-dark);
-  font-size: 13px;
-  font-family: var(--font-body);
-  cursor: pointer;
 }
 
 .profile-detail {
@@ -211,81 +230,20 @@ function logout() {
   margin-bottom: 14px;
 }
 
-.detail-grid, .edit-grid {
+.edit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.detail-label {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-}
-
-.detail-value {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.form-group label {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-}
-
-.field-input {
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-family: var(--font-body);
-  background: var(--color-bg);
-  outline: none;
-}
-
-.field-input:focus {
-  border-color: var(--color-primary);
+  gap: 0 14px;
 }
 
 .edit-actions {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 8px;
 }
 
-.save-btn {
+.edit-actions .el-button {
   flex: 1;
-  padding: 10px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.cancel-btn {
-  padding: 10px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  font-size: 14px;
-  font-family: var(--font-body);
-  cursor: pointer;
 }
 
 .section {
@@ -298,66 +256,41 @@ function logout() {
 }
 
 .empty {
-  text-align: center;
-  color: var(--color-text-secondary);
-  padding: 16px 0;
-  font-size: 13px;
-}
-
-.assessment-item {
   padding: 10px 0;
-  border-bottom: 1px solid var(--color-border);
 }
 
-.assessment-item:last-child {
-  border-bottom: none;
-}
-
-.assessment-head {
+.collapse-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  gap: 10px;
 }
 
-.risk-badge {
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  background: #e8f5e9;
-  color: var(--color-primary-dark);
-}
-
-.risk-badge.高风险, .risk-badge.high {
-  background: #ffebee;
-  color: var(--color-danger);
-}
-
-.risk-badge.中风险, .risk-badge.medium {
-  background: #fff3e0;
-  color: var(--color-warning);
-}
-
-.assessment-source {
-  font-size: 11px;
+.collapse-source {
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
 .assessment-advice {
   font-size: 13px;
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
+  padding: 4px 0;
+}
+
+.risk-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.reason-tag {
+  margin: 0;
 }
 
 .logout-btn {
-  padding: 12px;
-  border: 1px solid var(--color-border);
+  width: 100%;
   border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-family: var(--font-body);
-  cursor: pointer;
+  height: 44px;
 }
 </style>

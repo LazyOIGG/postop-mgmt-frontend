@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { HomeFilled, ChatDotRound, Document, User } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 
 const tabs = [
-  { name: 'PatientHome', label: '首页', icon: '🏠', path: '/patient/home' },
-  { name: 'PatientChat', label: 'AI助手', icon: '💬', path: '/patient/chat' },
-  { name: 'PatientCheckin', label: '打卡', icon: '📋', path: '/patient/checkin' },
-  { name: 'PatientProfile', label: '我的', icon: '👤', path: '/patient/profile' },
+  { name: 'PatientHome', label: '首页', icon: HomeFilled, path: '/patient/home' },
+  { name: 'PatientChat', label: 'AI助手', icon: ChatDotRound, path: '/patient/chat' },
+  { name: 'PatientCheckin', label: '打卡', icon: Document, path: '/patient/checkin' },
+  { name: 'PatientProfile', label: '我的', icon: User, path: '/patient/profile' },
 ]
 
 function goTab(path: string) {
@@ -47,7 +48,7 @@ function isActive(tabName: string) {
         :class="{ active: isActive(tab.name) }"
         @click="goTab(tab.path)"
       >
-        <span class="tab-icon">{{ tab.icon }}</span>
+        <el-icon :size="20"><component :is="tab.icon" /></el-icon>
         <span class="tab-label">{{ tab.label }}</span>
       </div>
     </nav>
@@ -125,18 +126,27 @@ function isActive(tabName: string) {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 16px;
+  padding: 6px 20px;
   cursor: pointer;
   transition: color 0.2s;
   color: var(--color-text-secondary);
+  position: relative;
 }
 
 .tab-item.active {
   color: var(--color-primary-dark);
 }
 
-.tab-icon {
-  font-size: 20px;
+.tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 0 0 3px 3px;
 }
 
 .tab-label {

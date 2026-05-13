@@ -4,13 +4,15 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { doctorService } from '@/services/doctor'
 import type { Patient, DoctorMessage } from '@/types'
+import { User } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const auth = useAuthStore()
 
 const patients = ref<Patient[]>([])
 const messages = ref<DoctorMessage[]>([])
-const selectedPatient = ref<string>('')
+const selectedPatient = ref('')
+const selectedPatientName = ref('')
 const inputText = ref('')
 const loadingPatients = ref(false)
 
@@ -28,6 +30,7 @@ onMounted(async () => {
   const preselected = route.query.patient as string
   if (preselected) {
     selectedPatient.value = preselected
+    selectedPatientName.value = patients.value.find((p) => p.username === preselected)?.real_name || preselected
     await loadMessages()
   }
 })
@@ -59,6 +62,8 @@ async function sendMessage() {
 
 function selectPatient(username: string) {
   selectedPatient.value = username
+  const p = patients.value.find((p) => p.username === username)
+  selectedPatientName.value = p?.real_name || username
   loadMessages()
 }
 </script>
@@ -68,7 +73,9 @@ function selectPatient(username: string) {
     <div class="msg-shell stagger-item stagger-1">
       <div class="patient-list-panel glass-card">
         <h4>患者列表</h4>
-        <div v-if="loadingPatients" class="loading">加载中...</div>
+        <div v-if="loadingPatients" class="loading">
+          <el-skeleton :rows="6" animated />
+        </div>
         <div
           v-for="p in patients"
           :key="p.username"
@@ -79,18 +86,32 @@ function selectPatient(username: string) {
           <div class="patient-avatar">{{ (p.real_name || p.username)[0] }}</div>
           <div class="patient-meta">
             <span class="patient-name">{{ p.real_name || p.username }}</span>
-            <span class="patient-risk">{{ p.risk_level || '低风险' }}</span>
+            <el-tag
+              :type="p.risk_level === '高风险' || p.risk_level === 'high' ? 'danger' : 'success'"
+              size="small"
+              round
+            >
+              {{ p.risk_level || '低风险' }}
+            </el-tag>
           </div>
         </div>
       </div>
 
       <div class="chat-panel glass-card">
         <template v-if="!selectedPatient">
-          <div class="no-chat">请选择一位患者开始对话</div>
+          <div class="no-chat">
+            <el-empty description="请选择一位患者开始对话" :image-size="100" />
+          </div>
         </template>
         <template v-else>
+          <div class="chat-header">
+            <div class="chat-patient-info">
+              <div class="chat-avatar">{{ selectedPatientName[0] }}</div>
+              <span class="chat-patient-name">{{ selectedPatientName }}</span>
+            </div>
+          </div>
           <div class="chat-messages">
-            <div v-if="messages.length === 0" class="empty">暂无消息</div>
+            <div v-if="messages.length === 0" class="empty">暂无消息，发送第一条吧</div>
             <div
               v-for="m in messages"
               :key="m.id"
@@ -102,14 +123,24 @@ function selectPatient(username: string) {
             </div>
           </div>
           <div class="chat-input-area">
-            <input
+            <el-input
               v-model="inputText"
-              type="text"
-              class="msg-input"
               placeholder="输入消息..."
+              size="large"
               @keyup.enter="sendMessage"
-            />
-            <button class="msg-send" @click="sendMessage" :disabled="!inputText.trim()">发送</button>
+            >
+              <template #suffix>
+                <el-button
+                  type="primary"
+                  :disabled="!inputText.trim()"
+                  size="small"
+                  round
+                  @click="sendMessage"
+                >
+                  发送
+                </el-button>
+              </template>
+            </el-input>
           </div>
         </template>
       </div>
@@ -142,10 +173,7 @@ function selectPatient(username: string) {
 }
 
 .loading {
-  text-align: center;
-  color: var(--color-text-secondary);
-  padding: 20px;
-  font-size: 13px;
+  padding: 10px 0;
 }
 
 .patient-item {
@@ -159,7 +187,7 @@ function selectPatient(username: string) {
 }
 
 .patient-item:hover, .patient-item.selected {
-  background: var(--color-bg);
+  background: var(--color-primary-bg);
 }
 
 .patient-avatar {
@@ -179,7 +207,7 @@ function selectPatient(username: string) {
 .patient-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -189,11 +217,6 @@ function selectPatient(username: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.patient-risk {
-  font-size: 11px;
-  color: var(--color-text-secondary);
 }
 
 .chat-panel {
@@ -208,8 +231,35 @@ function selectPatient(username: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-secondary);
+}
+
+.chat-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chat-patient-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chat-patient-name {
   font-size: 14px;
+  font-weight: 500;
 }
 
 .chat-messages {
@@ -241,6 +291,7 @@ function selectPatient(username: string) {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: #fff;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(122,154,126,0.2);
 }
 
 .msg-bubble.patient {
@@ -261,42 +312,11 @@ function selectPatient(username: string) {
 }
 
 .chat-input-area {
-  display: flex;
-  gap: 8px;
   padding: 14px 18px;
   border-top: 1px solid var(--color-border);
 }
 
-.msg-input {
-  flex: 1;
-  padding: 10px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  font-size: 14px;
-  font-family: var(--font-body);
-  background: var(--color-bg);
-  outline: none;
-}
-
-.msg-input:focus {
-  border-color: var(--color-primary);
-}
-
-.msg-send {
-  padding: 10px 20px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  font-size: 13px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.msg-send:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.chat-input-area .el-input {
+  --el-input-border-radius: 20px;
 }
 </style>

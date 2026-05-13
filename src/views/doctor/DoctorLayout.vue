@@ -3,6 +3,10 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useDoctorStore } from '@/stores/doctor'
+import {
+  DataBoard, UserFilled, WarningFilled, ChatDotRound, TrendCharts,
+  ArrowLeft, ArrowRight, Plus,
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -12,11 +16,11 @@ const doctorStore = useDoctorStore()
 const collapsed = ref(false)
 
 const navItems = [
-  { name: 'DoctorDashboard', label: '工作台', icon: '📊', path: '/doctor/dashboard' },
-  { name: 'DoctorPatients', label: '患者管理', icon: '👥', path: '/doctor/patients' },
-  { name: 'DoctorAlerts', label: '异常预警', icon: '⚠️', path: '/doctor/alerts' },
-  { name: 'DoctorMessages', label: '医患消息', icon: '💬', path: '/doctor/messages' },
-  { name: 'DoctorStatistics', label: '系统统计', icon: '📈', path: '/doctor/statistics' },
+  { name: 'DoctorDashboard', label: '工作台', icon: DataBoard, path: '/doctor/dashboard' },
+  { name: 'DoctorPatients', label: '患者管理', icon: UserFilled, path: '/doctor/patients' },
+  { name: 'DoctorAlerts', label: '异常预警', icon: WarningFilled, path: '/doctor/alerts' },
+  { name: 'DoctorMessages', label: '医患消息', icon: ChatDotRound, path: '/doctor/messages' },
+  { name: 'DoctorStatistics', label: '系统统计', icon: TrendCharts, path: '/doctor/statistics' },
 ]
 
 function isActive(name: string) {
@@ -33,38 +37,52 @@ function logout() {
   <div class="doctor-shell">
     <aside class="sidebar" :class="{ collapsed }">
       <div class="sidebar-brand">
-        <span class="brand-icon">+</span>
+        <div class="brand-icon">
+          <el-icon :size="20"><Plus /></el-icon>
+        </div>
         <span v-if="!collapsed" class="brand-text">术后康复</span>
       </div>
 
       <nav class="sidebar-nav">
-        <div
+        <el-tooltip
           v-for="item in navItems"
           :key="item.name"
-          class="nav-item"
-          :class="{ active: isActive(item.name) }"
-          @click="router.push(item.path)"
+          :content="item.label"
+          placement="right"
+          :disabled="!collapsed"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
-          <span
-            v-if="item.name === 'DoctorAlerts' && doctorStore.unreadCount > 0 && collapsed"
-            class="nav-badge-dot"
-          ></span>
-          <span
-            v-if="item.name === 'DoctorAlerts' && doctorStore.unreadCount > 0 && !collapsed"
-            class="nav-badge"
-          >{{ doctorStore.unreadCount }}</span>
-        </div>
+          <div
+            class="nav-item"
+            :class="{ active: isActive(item.name) }"
+            @click="router.push(item.path)"
+          >
+            <el-badge
+              v-if="item.name === 'DoctorAlerts' && doctorStore.unreadCount > 0"
+              :value="doctorStore.unreadCount"
+              :max="99"
+              class="nav-icon-badge"
+            >
+              <el-icon :size="18"><component :is="item.icon" /></el-icon>
+            </el-badge>
+            <el-icon v-else :size="18"><component :is="item.icon" /></el-icon>
+            <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
+          </div>
+        </el-tooltip>
       </nav>
 
       <div class="sidebar-footer">
         <button class="collapse-btn" @click="collapsed = !collapsed">
-          {{ collapsed ? '▶' : '◀' }}
+          <el-icon :size="14">
+            <ArrowLeft v-if="!collapsed" />
+            <ArrowRight v-else />
+          </el-icon>
         </button>
         <div v-if="!collapsed" class="user-info">
-          <span class="user-name">Dr. {{ auth.user?.username }}</span>
-          <button class="logout-link" @click="logout">退出</button>
+          <div class="user-avatar">Dr</div>
+          <div class="user-meta">
+            <span class="user-name">{{ auth.user?.username }}</span>
+            <button class="logout-link" @click="logout">退出登录</button>
+          </div>
         </div>
       </div>
     </aside>
@@ -105,7 +123,7 @@ function logout() {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px;
+  padding: 20px 18px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -117,8 +135,6 @@ function logout() {
   justify-content: center;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: #fff;
-  font-size: 20px;
-  font-weight: 300;
   border-radius: 10px;
   flex-shrink: 0;
 }
@@ -145,49 +161,28 @@ function logout() {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
   font-size: 14px;
   color: var(--color-text-secondary);
-  position: relative;
 }
 
 .nav-item:hover {
   background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .nav-item.active {
-  background: var(--color-bg);
+  background: var(--color-primary-bg);
   color: var(--color-primary-dark);
   font-weight: 600;
-}
-
-.nav-icon {
-  font-size: 18px;
-  flex-shrink: 0;
 }
 
 .nav-label {
   white-space: nowrap;
 }
 
-.nav-badge {
-  margin-left: auto;
-  background: var(--color-danger);
-  color: #fff;
-  font-size: 11px;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.nav-badge-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  background: var(--color-danger);
-  border-radius: 50%;
+.nav-icon-badge {
+  display: flex;
 }
 
 .sidebar-footer {
@@ -206,25 +201,64 @@ function logout() {
   cursor: pointer;
   font-size: 12px;
   align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition: color 0.15s;
+}
+
+.collapse-btn:hover {
+  color: var(--color-text);
 }
 
 .user-info {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 .user-name {
   font-size: 13px;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .logout-link {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-secondary);
   background: none;
   border: none;
   cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.logout-link:hover {
+  color: var(--color-danger);
 }
 
 .main-area {

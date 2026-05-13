@@ -5,14 +5,19 @@
   --color-primary: #7a9a7e;
   --color-primary-light: #a8c4aa;
   --color-primary-dark: #5a7a5e;
+  --color-primary-bg: rgba(122, 154, 126, 0.08);
   --color-accent: #d4956a;
   --color-accent-light: #e8b894;
+  --color-accent-bg: rgba(212, 149, 106, 0.1);
   --color-text: #3d3530;
   --color-text-secondary: #8a7e74;
   --color-border: #e8e0d8;
   --color-danger: #c0392b;
+  --color-danger-bg: #ffebee;
   --color-success: #6b9e7a;
+  --color-success-bg: #e8f5e9;
   --color-warning: #d4a843;
+  --color-warning-bg: #fff3e0;
 
   --font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
   --font-body: 'Nunito Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -45,7 +50,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 400;
   color: var(--color-text);
@@ -87,6 +92,16 @@ a {
 .stagger-3 { animation-delay: 0.19s; }
 .stagger-4 { animation-delay: 0.26s; }
 .stagger-5 { animation-delay: 0.33s; }
+
+/* Page transition */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.25s ease;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
 
 /* Organic background for login */
 .organic-bg {

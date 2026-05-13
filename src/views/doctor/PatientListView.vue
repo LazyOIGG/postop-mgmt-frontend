@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { doctorService } from '@/services/doctor'
 import type { Patient } from '@/types'
+import { Search } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const patients = ref<Patient[]>([])
 const searchQuery = ref('')
 const loading = ref(false)
 
+import { onMounted } from 'vue'
 onMounted(() => fetchPatients())
 
 async function fetchPatients() {
@@ -41,58 +43,65 @@ function viewDetail(username: string) {
 <template>
   <div class="patients">
     <div class="toolbar glass-card stagger-item stagger-1">
-      <div class="search-box">
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input"
-          placeholder="搜索患者姓名或用户名..."
-        />
-      </div>
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索患者姓名或用户名..."
+        :prefix-icon="Search"
+        size="large"
+        clearable
+        style="width: 280px"
+      />
       <span class="count">共 {{ patients.length }} 位患者</span>
     </div>
 
     <div class="patient-table-card glass-card stagger-item stagger-2">
-      <div v-if="loading" class="loading">加载中...</div>
-      <div v-else-if="filteredPatients.length === 0" class="empty">暂无患者数据</div>
+      <div v-if="loading" class="loading">
+        <el-skeleton :rows="5" animated />
+      </div>
+      <div v-else-if="filteredPatients.length === 0" class="empty">
+        <el-empty description="暂无患者数据" />
+      </div>
       <div v-else class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>用户名</th>
-              <th>姓名</th>
-              <th>风险等级</th>
-              <th>最近打卡</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="p in filteredPatients" :key="p.username">
-              <td>{{ p.username }}</td>
-              <td>{{ p.real_name || '-' }}</td>
-              <td>
-                <span class="risk-tag" :class="p.risk_level || 'low'">
-                  {{ p.risk_level || '低风险' }}
-                </span>
-              </td>
-              <td>{{ p.last_checkin || '-' }}</td>
-              <td>
-                <button class="action-btn" @click="viewDetail(p.username)">详情</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <el-table
+          :data="filteredPatients"
+          stripe
+          style="width: 100%"
+          :header-cell-style="{ background: 'rgba(250,247,244,0.5)', color: '#8a7e74', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }"
+        >
+          <el-table-column prop="username" label="用户名" min-width="120" />
+          <el-table-column prop="real_name" label="姓名" min-width="100">
+            <template #default="{ row }">
+              {{ row.real_name || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="风险等级" width="110">
+            <template #default="{ row }">
+              <el-tag
+                :type="row.risk_level === '高风险' || row.risk_level === 'high' ? 'danger' : 'success'"
+                size="small"
+                round
+              >
+                {{ row.risk_level || '低风险' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="last_checkin" label="最近打卡" width="120">
+            <template #default="{ row }">
+              {{ row.last_checkin || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" fixed="right">
+            <template #default="{ row }">
+              <el-button text type="primary" size="small" @click="viewDetail(row.username)">
+                详情
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
     </div>
   </div>
 </template>
-
-<script lang="ts">
-import { computed } from 'vue'
-export default {
-  name: 'PatientListView',
-}
-</script>
 
 <style scoped>
 .patients {
@@ -108,22 +117,6 @@ export default {
   padding: 14px 18px;
 }
 
-.search-input {
-  padding: 8px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  font-size: 13px;
-  font-family: var(--font-body);
-  background: var(--color-bg);
-  outline: none;
-  width: 240px;
-  transition: border-color 0.2s;
-}
-
-.search-input:focus {
-  border-color: var(--color-primary);
-}
-
 .count {
   font-size: 13px;
   color: var(--color-text-secondary);
@@ -135,78 +128,14 @@ export default {
 }
 
 .table-wrap {
-  overflow-x: auto;
-}
-
-.data-table {
   width: 100%;
-  border-collapse: collapse;
 }
 
-.data-table th {
-  text-align: left;
-  padding: 14px 18px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(250, 247, 244, 0.5);
+.loading {
+  padding: 24px;
 }
 
-.data-table td {
-  padding: 14px 18px;
-  font-size: 14px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.data-table tr:last-child td {
-  border-bottom: none;
-}
-
-.data-table tr:hover td {
-  background: rgba(122, 154, 126, 0.03);
-}
-
-.risk-tag {
-  padding: 3px 10px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.risk-tag.low, .risk-tag.低风险 {
-  background: #e8f5e9;
-  color: var(--color-primary-dark);
-}
-
-.risk-tag.high, .risk-tag.高风险, .risk-tag.medium, .risk-tag.中风险 {
-  background: #ffebee;
-  color: var(--color-danger);
-}
-
-.action-btn {
-  padding: 4px 14px;
-  border: 1px solid var(--color-primary);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--color-primary-dark);
-  font-size: 12px;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.action-btn:hover {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.loading, .empty {
-  text-align: center;
-  padding: 40px;
-  color: var(--color-text-secondary);
-  font-size: 14px;
+.empty {
+  padding: 20px 0;
 }
 </style>

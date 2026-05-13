@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { checkinService } from '@/services/checkin'
 import type { DailyCheckinRequest, CheckinRecord } from '@/types'
+import { Check, Clock } from '@element-plus/icons-vue'
 
 const today = new Date().toISOString().slice(0, 10)
 const submitted = ref(false)
@@ -52,109 +53,143 @@ onMounted(() => fetchHistory())
       <h2 class="stagger-item stagger-1">每日健康打卡</h2>
       <p class="date-label stagger-item stagger-1">{{ today }}</p>
 
-      <div class="form-card glass-card stagger-item stagger-2">
+      <el-card class="form-card stagger-item stagger-2" shadow="never">
         <div class="form-group">
           <label>体温 (°C)</label>
-          <input v-model.number="form.temperature" type="number" step="0.1" class="field-input" placeholder="36.5" />
+          <el-input-number
+            v-model="form.temperature"
+            :precision="1"
+            :step="0.1"
+            :min="35"
+            :max="42"
+            placeholder="36.5"
+            controls-position="right"
+            style="width: 100%"
+          />
         </div>
 
         <div class="form-group">
           <label>血压</label>
-          <input v-model="form.blood_pressure" type="text" class="field-input" placeholder="120/80" />
+          <el-input v-model="form.blood_pressure" placeholder="120/80" size="large" />
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>血糖 (mmol/L)</label>
-            <input v-model.number="form.blood_sugar" type="number" step="0.1" class="field-input" placeholder="5.6" />
+            <el-input-number
+              v-model="form.blood_sugar"
+              :precision="1"
+              :step="0.1"
+              :min="0"
+              placeholder="5.6"
+              controls-position="right"
+              style="width: 100%"
+            />
           </div>
           <div class="form-group">
             <label>心率 (bpm)</label>
-            <input v-model.number="form.heart_rate" type="number" class="field-input" placeholder="72" />
+            <el-input-number
+              v-model="form.heart_rate"
+              :precision="0"
+              :step="1"
+              :min="30"
+              :max="200"
+              placeholder="72"
+              controls-position="right"
+              style="width: 100%"
+            />
           </div>
         </div>
 
         <div class="form-group">
           <label>睡眠质量</label>
-          <div class="chip-row">
-            <button
-              v-for="s in sleepOptions"
-              :key="s"
-              class="chip"
-              :class="{ selected: form.sleep_status === s }"
-              @click="form.sleep_status = s"
-            >{{ s }}</button>
-          </div>
+          <el-radio-group v-model="form.sleep_status">
+            <el-radio-button v-for="s in sleepOptions" :key="s" :value="s">{{ s }}</el-radio-button>
+          </el-radio-group>
         </div>
 
         <div class="form-group">
           <label>饮食状况</label>
-          <div class="chip-row">
-            <button
-              v-for="s in statusOptions"
-              :key="s"
-              class="chip"
-              :class="{ selected: form.diet_status === s }"
-              @click="form.diet_status = s"
-            >{{ s }}</button>
-          </div>
+          <el-radio-group v-model="form.diet_status">
+            <el-radio-button v-for="s in statusOptions" :key="s" :value="s">{{ s }}</el-radio-button>
+          </el-radio-group>
         </div>
 
         <div class="form-group">
           <label>运动状况</label>
-          <div class="chip-row">
-            <button
-              v-for="s in statusOptions"
-              :key="s"
-              class="chip"
-              :class="{ selected: form.exercise_status === s }"
-              @click="form.exercise_status = s"
-            >{{ s }}</button>
-          </div>
+          <el-radio-group v-model="form.exercise_status">
+            <el-radio-button v-for="s in statusOptions" :key="s" :value="s">{{ s }}</el-radio-button>
+          </el-radio-group>
         </div>
 
         <div class="form-group">
           <label>症状描述</label>
-          <textarea v-model="form.symptoms" class="field-input textarea" placeholder="描述您今天的感觉..." rows="2"></textarea>
+          <el-input
+            v-model="form.symptoms"
+            type="textarea"
+            :rows="2"
+            placeholder="描述您今天的感觉..."
+          />
         </div>
 
         <div class="form-group checkbox-row">
-          <label class="checkbox-label">
-            <input v-model="form.medication_taken" type="checkbox" />
-            <span>今日已按时服药</span>
-          </label>
+          <el-checkbox v-model="form.medication_taken" size="large">
+            今日已按时服药
+          </el-checkbox>
         </div>
 
         <div class="form-group">
           <label>备注</label>
-          <textarea v-model="form.note" class="field-input textarea" placeholder="其他想记录的内容..." rows="2"></textarea>
+          <el-input
+            v-model="form.note"
+            type="textarea"
+            :rows="2"
+            placeholder="其他想记录的内容..."
+          />
         </div>
 
-        <button class="submit-btn" @click="submitCheckin">提交打卡</button>
-      </div>
+        <el-button
+          type="primary"
+          size="large"
+          class="submit-btn"
+          @click="submitCheckin"
+        >
+          提交打卡
+        </el-button>
+      </el-card>
     </div>
 
-    <div v-else class="success-section">
-      <div class="success-card glass-card stagger-item stagger-1">
-        <div class="success-icon">✓</div>
-        <h2>打卡成功</h2>
-        <p>今天的健康数据已记录</p>
-        <button class="submit-btn outline" @click="submitted = false">继续打卡</button>
-      </div>
+    <div v-else class="success-section stagger-item stagger-1">
+      <el-result
+        icon="success"
+        title="打卡成功"
+        sub-title="今天的健康数据已记录"
+      >
+        <template #extra>
+          <el-button type="primary" @click="submitted = false">继续打卡</el-button>
+        </template>
+      </el-result>
     </div>
 
     <section v-if="history.length > 0" class="history-section stagger-item stagger-3">
       <h3>打卡记录</h3>
-      <div class="history-list">
-        <div v-for="r in history.slice(0, 7)" :key="r.id" class="history-item glass-card">
-          <div class="history-date">{{ r.checkin_date }}</div>
-          <div class="history-data">
+      <el-timeline>
+        <el-timeline-item
+          v-for="r in history.slice(0, 7)"
+          :key="r.id"
+          :timestamp="r.checkin_date"
+          placement="top"
+          :icon="Check"
+          color="#7a9a7e"
+        >
+          <div class="timeline-content">
             <span v-if="r.temperature">🌡 {{ r.temperature }}°C</span>
             <span v-if="r.blood_pressure">💓 {{ r.blood_pressure }}</span>
             <span v-if="r.heart_rate">❤️ {{ r.heart_rate }} bpm</span>
+            <span v-if="r.sleep_status">😴 {{ r.sleep_status }}</span>
           </div>
-        </div>
-      </div>
+        </el-timeline-item>
+      </el-timeline>
     </section>
   </div>
 </template>
@@ -177,10 +212,14 @@ h2 {
 }
 
 .form-card {
-  padding: 20px;
+  border-radius: var(--radius-md);
+  --el-card-padding: 20px;
+}
+
+.form-card .el-card__body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .form-group {
@@ -204,113 +243,24 @@ h2 {
   flex: 1;
 }
 
-.field-input {
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  font-family: var(--font-body);
-  background: var(--color-bg);
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.field-input:focus {
-  border-color: var(--color-primary);
-}
-
-.textarea {
-  resize: vertical;
-}
-
-.chip-row {
-  display: flex;
-  gap: 8px;
-}
-
-.chip {
-  padding: 7px 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface);
-  font-size: 13px;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.chip.selected {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-}
-
 .checkbox-row {
   flex-direction: row;
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
 .submit-btn {
-  width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
+  --el-button-bg-color: var(--color-primary);
+  --el-button-border-color: var(--color-primary);
+  --el-button-hover-bg-color: var(--color-primary-dark);
+  --el-button-hover-border-color: var(--color-primary-dark);
+  --el-button-active-bg-color: var(--color-primary-dark);
+  letter-spacing: 3px;
   font-size: 16px;
-  font-weight: 600;
-  font-family: var(--font-body);
-  letter-spacing: 2px;
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-
-.submit-btn:active {
-  transform: scale(0.98);
-}
-
-.submit-btn.outline {
-  background: transparent;
-  color: var(--color-primary-dark);
-  border: 1.5px solid var(--color-primary);
+  height: 44px;
+  border-radius: var(--radius-md);
 }
 
 .success-section {
-  padding: 40px 0;
-  text-align: center;
-}
-
-.success-card {
-  padding: 48px 24px;
-}
-
-.success-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  font-size: 30px;
-  border-radius: 50%;
-}
-
-.success-card h2 {
-  margin-bottom: 6px;
-}
-
-.success-card p {
-  color: var(--color-text-secondary);
-  margin-bottom: 24px;
+  padding: 20px 0;
 }
 
 .history-section h3 {
@@ -318,28 +268,10 @@ h2 {
   margin-bottom: 12px;
 }
 
-.history-list {
+.timeline-content {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
-}
-
-.history-item {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.history-date {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-}
-
-.history-data {
-  display: flex;
-  gap: 12px;
   font-size: 13px;
   color: var(--color-text-secondary);
 }

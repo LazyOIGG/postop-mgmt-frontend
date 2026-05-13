@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { chatService, sessionService } from '@/services/chat'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { Plus, ChatDotRound } from '@element-plus/icons-vue'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
@@ -114,13 +115,22 @@ async function newChat() {
 <template>
   <div class="chat-view">
     <div class="chat-toolbar">
-      <button class="toolbar-btn" @click="showSessions = !showSessions">
-        💬 会话
-      </button>
-      <button class="toolbar-btn" @click="newChat">+ 新对话</button>
-      <span class="ws-status" :class="{ connected: isConnected }">
+      <el-button text size="small" @click="showSessions = !showSessions">
+        <el-icon :size="16"><ChatDotRound /></el-icon>
+        会话
+      </el-button>
+      <el-button text size="small" @click="newChat">
+        <el-icon :size="16"><Plus /></el-icon>
+        新对话
+      </el-button>
+      <el-tag
+        :type="isConnected ? 'success' : 'info'"
+        size="small"
+        round
+        class="ws-status"
+      >
         {{ isConnected ? '在线' : '离线' }}
-      </span>
+      </el-tag>
     </div>
 
     <div v-if="showSessions" class="session-panel glass-card">
@@ -139,9 +149,14 @@ async function newChat() {
 
     <div ref="messagesContainer" class="messages-container">
       <div v-if="messages.length === 0" class="welcome">
-        <div class="welcome-icon">+</div>
+        <div class="welcome-logo">+</div>
         <h3>术后康复助手</h3>
         <p>有任何术后康复问题，随时问我</p>
+        <div class="welcome-hints">
+          <span>伤口恢复注意事项</span>
+          <span>今日饮食建议</span>
+          <span>康复运动指导</span>
+        </div>
       </div>
       <div
         v-for="(msg, i) in messages"
@@ -160,16 +175,25 @@ async function newChat() {
     </div>
 
     <div class="input-area">
-      <input
+      <el-input
         v-model="inputText"
-        type="text"
-        class="chat-input"
         placeholder="输入您的问题..."
+        size="large"
+        class="chat-input"
         @keyup.enter="sendMessage"
-      />
-      <button class="send-btn" @click="sendMessage" :disabled="!inputText.trim()">
-        发送
-      </button>
+      >
+        <template #suffix>
+          <el-button
+            type="primary"
+            :disabled="!inputText.trim() || isStreaming"
+            size="small"
+            round
+            @click="sendMessage"
+          >
+            发送
+          </el-button>
+        </template>
+      </el-input>
     </div>
   </div>
 </template>
@@ -188,33 +212,8 @@ async function newChat() {
   padding-bottom: 10px;
 }
 
-.toolbar-btn {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.toolbar-btn:hover {
-  background: var(--color-bg);
-}
-
 .ws-status {
   margin-left: auto;
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 10px;
-  background: #f5f5f5;
-  color: #999;
-}
-
-.ws-status.connected {
-  background: #e8f5e9;
-  color: var(--color-primary-dark);
 }
 
 .session-panel {
@@ -234,7 +233,7 @@ async function newChat() {
 }
 
 .session-item:hover, .session-item.active {
-  background: var(--color-bg);
+  background: var(--color-primary-bg);
 }
 
 .session-title {
@@ -268,9 +267,9 @@ async function newChat() {
   padding: 60px 20px 0;
 }
 
-.welcome-icon {
-  width: 60px;
-  height: 60px;
+.welcome-logo {
+  width: 64px;
+  height: 64px;
   margin: 0 auto 16px;
   display: flex;
   align-items: center;
@@ -280,6 +279,7 @@ async function newChat() {
   font-size: 30px;
   font-weight: 300;
   border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(122,154,126,0.3);
 }
 
 .welcome h3 {
@@ -290,6 +290,30 @@ async function newChat() {
 .welcome p {
   font-size: 14px;
   color: var(--color-text-secondary);
+  margin-bottom: 20px;
+}
+
+.welcome-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.welcome-hints span {
+  padding: 6px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.welcome-hints span:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
 }
 
 .message {
@@ -310,13 +334,13 @@ async function newChat() {
   border-radius: 18px;
   font-size: 14px;
   line-height: 1.6;
-  position: relative;
 }
 
 .message.user .message-bubble {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: #fff;
   border-bottom-right-radius: 6px;
+  box-shadow: 0 2px 8px rgba(122,154,126,0.25);
 }
 
 .message.assistant .message-bubble {
@@ -359,43 +383,11 @@ async function newChat() {
 }
 
 .input-area {
-  display: flex;
-  gap: 8px;
   padding-top: 10px;
   margin-top: auto;
 }
 
 .chat-input {
-  flex: 1;
-  padding: 12px 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 24px;
-  font-size: 15px;
-  font-family: var(--font-body);
-  background: var(--color-surface);
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.chat-input:focus {
-  border-color: var(--color-primary);
-}
-
-.send-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  border: none;
-  border-radius: 24px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.send-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  --el-input-border-radius: 24px;
 }
 </style>

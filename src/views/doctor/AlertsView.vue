@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useDoctorStore } from '@/stores/doctor'
+import { Bell } from '@element-plus/icons-vue'
 
 const doctorStore = useDoctorStore()
-const activeTab = ref<'pending' | 'processed'>('pending')
+const activeTab = ref('pending')
 
 onMounted(async () => {
   doctorStore.alertFilter = 'pending'
   await doctorStore.fetchAlerts()
 })
 
-async function switchTab(tab: 'pending' | 'processed') {
+async function switchTab(tab: string) {
   activeTab.value = tab
-  doctorStore.alertFilter = tab
+  doctorStore.alertFilter = tab as 'pending' | 'processed'
   await doctorStore.fetchAlerts()
 }
 
@@ -23,50 +24,61 @@ async function handleProcess(alertId: number) {
 
 <template>
   <div class="alerts">
-    <div class="alert-tabs stagger-item stagger-1">
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'pending' }"
-        @click="switchTab('pending')"
-      >
-        待处理
-        <span v-if="doctorStore.pendingAlerts.length" class="count-badge">
-          {{ doctorStore.pendingAlerts.length }}
-        </span>
-      </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'processed' }"
-        @click="switchTab('processed')"
-      >
-        已处理
-      </button>
-    </div>
+    <el-tabs v-model="activeTab" class="alert-tabs stagger-item stagger-1" @tab-change="switchTab">
+      <el-tab-pane label="待处理" name="pending">
+        <template #label>
+          <span class="tab-label-inner">
+            待处理
+            <el-badge
+              v-if="doctorStore.pendingAlerts.length"
+              :value="doctorStore.pendingAlerts.length"
+              class="tab-badge"
+            />
+          </span>
+        </template>
+      </el-tab-pane>
+      <el-tab-pane label="已处理" name="processed" />
+    </el-tabs>
 
     <div class="alert-list stagger-item stagger-2">
-      <div v-if="doctorStore.alerts.length === 0" class="empty">暂无预警</div>
-      <div
+      <div v-if="doctorStore.alerts.length === 0" class="empty">
+        <el-empty description="暂无预警" :image-size="80" />
+      </div>
+      <el-card
         v-for="alert in doctorStore.alerts"
         :key="alert.id"
-        class="alert-card glass-card"
+        class="alert-card"
+        shadow="hover"
       >
         <div class="alert-header">
-          <span class="alert-type">{{ alert.type || '预警' }}</span>
-          <span class="alert-status" :class="alert.status">{{ alert.status === 'pending' ? '待处理' : '已处理' }}</span>
+          <div class="alert-type-row">
+            <el-icon :size="16" color="#c0392b"><Bell /></el-icon>
+            <span class="alert-type">{{ alert.type || '预警' }}</span>
+          </div>
+          <el-tag
+            :type="alert.status === 'pending' ? 'warning' : 'success'"
+            size="small"
+            round
+          >
+            {{ alert.status === 'pending' ? '待处理' : '已处理' }}
+          </el-tag>
         </div>
         <p class="alert-message">{{ alert.message }}</p>
         <div class="alert-footer">
-          <span class="alert-patient">{{ alert.patient_username }}</span>
+          <span class="alert-patient">患者：{{ alert.patient_username }}</span>
           <span class="alert-time">{{ alert.created_at?.slice(0, 16) }}</span>
         </div>
-        <button
+        <el-button
           v-if="alert.status === 'pending'"
+          type="primary"
+          plain
+          size="small"
           class="process-btn"
           @click="handleProcess(alert.id)"
         >
           标记已处理
-        </button>
-      </div>
+        </el-button>
+      </el-card>
     </div>
   </div>
 </template>
@@ -79,60 +91,33 @@ async function handleProcess(alertId: number) {
 }
 
 .alert-tabs {
-  display: flex;
-  gap: 0;
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  padding: 4px;
+  padding: 4px 16px;
   box-shadow: var(--shadow-sm);
 }
 
-.tab-btn {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  font-size: 14px;
-  font-family: var(--font-body);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+.tab-label-inner {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  color: var(--color-text-secondary);
-}
-
-.tab-btn.active {
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.count-badge {
-  background: var(--color-danger);
-  color: #fff;
-  font-size: 11px;
-  padding: 1px 7px;
-  border-radius: 10px;
 }
 
 .alert-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .empty {
-  text-align: center;
-  padding: 40px;
-  color: var(--color-text-secondary);
-  font-size: 14px;
+  padding: 20px 0;
 }
 
 .alert-card {
+  border-radius: var(--radius-md);
+}
+
+.alert-card .el-card__body {
   padding: 18px;
 }
 
@@ -143,35 +128,25 @@ async function handleProcess(alertId: number) {
   margin-bottom: 10px;
 }
 
+.alert-type-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .alert-type {
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-primary-dark);
+  color: var(--color-danger);
   text-transform: uppercase;
   letter-spacing: 1px;
-}
-
-.alert-status {
-  font-size: 11px;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-.alert-status.pending {
-  background: #fff3e0;
-  color: var(--color-warning);
-}
-
-.alert-status.processed {
-  background: #e8f5e9;
-  color: var(--color-primary-dark);
 }
 
 .alert-message {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 10px;
+  color: var(--color-text);
 }
 
 .alert-footer {
@@ -179,23 +154,10 @@ async function handleProcess(alertId: number) {
   justify-content: space-between;
   font-size: 12px;
   color: var(--color-text-secondary);
+  margin-bottom: 8px;
 }
 
 .process-btn {
-  margin-top: 10px;
-  padding: 6px 16px;
-  border: 1px solid var(--color-primary);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-primary-dark);
-  font-size: 12px;
-  font-family: var(--font-body);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.process-btn:hover {
-  background: var(--color-primary);
-  color: #fff;
+  margin-top: 4px;
 }
 </style>

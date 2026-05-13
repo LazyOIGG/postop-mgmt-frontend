@@ -2,24 +2,28 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { User, Lock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const username = ref('')
-const password = ref('')
+const formRef = ref()
+const form = ref({
+  username: '',
+  password: '',
+})
 const loading = ref(false)
 const error = ref('')
 
 async function handleLogin() {
-  if (!username.value || !password.value) {
+  if (!form.value.username || !form.value.password) {
     error.value = '请输入用户名和密码'
     return
   }
   loading.value = true
   error.value = ''
   try {
-    const res = await authStore.login({ username: username.value, password: password.value })
+    const res = await authStore.login({ username: form.value.username, password: form.value.password })
     if (res.success) {
       router.push(res.is_admin ? '/doctor' : '/patient')
     } else {
@@ -35,51 +39,87 @@ async function handleLogin() {
 
 <template>
   <div class="login-page organic-bg">
-    <div class="login-container">
-      <div class="login-card glass-card stagger-item stagger-1">
-        <div class="login-brand">
-          <div class="brand-icon">+</div>
-          <h1 class="brand-title">术后康复</h1>
-          <p class="brand-subtitle">Postoperative Recovery Management</p>
+    <div class="login-shell">
+      <!-- Decorative Panel -->
+      <div class="login-decor">
+        <div class="decor-overlay">
+          <div class="decor-brand">
+            <div class="decor-logo">+</div>
+            <h1>术后康复</h1>
+            <p>Postoperative Recovery Management System</p>
+          </div>
+          <div class="decor-features">
+            <div class="feature-item">
+              <span class="feature-dot"></span>
+              <span>术后智能康复管理</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-dot"></span>
+              <span>AI 辅助健康评估</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-dot"></span>
+              <span>医患实时沟通</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <form class="login-form" @submit.prevent="handleLogin">
-          <div class="form-item stagger-item stagger-2">
-            <label class="form-label">用户名</label>
-            <input
-              v-model="username"
-              type="text"
-              class="form-input"
-              placeholder="请输入用户名"
-              autocomplete="username"
-            />
+      <!-- Form Panel -->
+      <div class="login-form-panel">
+        <div class="form-wrapper stagger-item stagger-1">
+          <div class="form-header">
+            <h2>欢迎回来</h2>
+            <p>登录你的账号继续康复之旅</p>
           </div>
 
-          <div class="form-item stagger-item stagger-3">
-            <label class="form-label">密码</label>
-            <input
-              v-model="password"
-              type="password"
-              class="form-input"
-              placeholder="请输入密码"
-              autocomplete="current-password"
-            />
-          </div>
-
-          <p v-if="error" class="form-error stagger-item stagger-3">{{ error }}</p>
-
-          <button
-            type="submit"
-            class="btn-primary stagger-item stagger-4"
-            :disabled="loading"
+          <el-form
+            ref="formRef"
+            :model="form"
+            class="login-form"
+            @submit.prevent="handleLogin"
           >
-            {{ loading ? '登录中...' : '登 录' }}
-          </button>
-        </form>
+            <el-form-item class="stagger-item stagger-2">
+              <el-input
+                v-model="form.username"
+                placeholder="请输入用户名"
+                :prefix-icon="User"
+                size="large"
+              />
+            </el-form-item>
 
-        <p class="login-footer stagger-item stagger-5">
-          还没有账号？<router-link to="/register">立即注册</router-link>
-        </p>
+            <el-form-item class="stagger-item stagger-3">
+              <el-input
+                v-model="form.password"
+                type="password"
+                placeholder="请输入密码"
+                :prefix-icon="Lock"
+                size="large"
+                show-password
+                @keyup.enter="handleLogin"
+              />
+            </el-form-item>
+
+            <p v-if="error" class="form-error stagger-item stagger-3">{{ error }}</p>
+
+            <el-form-item class="stagger-item stagger-4">
+              <el-button
+                type="primary"
+                size="large"
+                class="login-btn"
+                :loading="loading"
+                round
+                @click="handleLogin"
+              >
+                登 录
+              </el-button>
+            </el-form-item>
+          </el-form>
+
+          <p class="form-footer stagger-item stagger-5">
+            还没有账号？<router-link to="/register">立即注册</router-link>
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -91,132 +131,195 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
 }
 
-.login-container {
+.login-shell {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 420px;
+  max-width: 960px;
+  min-height: 560px;
+  display: flex;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  margin: 20px;
 }
 
-.login-card {
-  padding: 48px 40px;
-  text-align: center;
-}
-
-.login-brand {
-  margin-bottom: 36px;
-}
-
-.brand-icon {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 16px;
+/* ===== Decorative Panel ===== */
+.login-decor {
+  flex: 1;
+  background: linear-gradient(160deg, #5a7a5e 0%, #7a9a7e 30%, #8b7e9e 100%);
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+}
+
+.login-decor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 50%);
+}
+
+.decor-overlay {
+  position: relative;
+  z-index: 1;
+  padding: 48px 40px;
+  text-align: center;
+  color: #fff;
+}
+
+.decor-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.18);
+  font-size: 32px;
+  font-weight: 300;
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+}
+
+.decor-brand h1 {
   color: #fff;
   font-size: 28px;
-  font-weight: 300;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 20px rgba(122, 154, 126, 0.35);
+  letter-spacing: 4px;
+  margin-bottom: 8px;
 }
 
-.brand-title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  color: var(--color-text);
-  letter-spacing: 2px;
-}
-
-.brand-subtitle {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 6px;
+.decor-brand p {
+  font-size: 13px;
+  opacity: 0.75;
   letter-spacing: 1px;
-  text-transform: uppercase;
+}
+
+.decor-features {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.feature-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  flex-shrink: 0;
+}
+
+/* ===== Form Panel ===== */
+.login-form-panel {
+  flex: 1;
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 340px;
+}
+
+.form-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.form-header h2 {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.form-header p {
+  font-size: 14px;
+  color: var(--color-text-secondary);
 }
 
 .login-form {
-  text-align: left;
+  display: flex;
+  flex-direction: column;
 }
 
-.form-item {
-  margin-bottom: 20px;
+.login-form .el-form-item {
+  margin-bottom: 18px;
 }
 
-.form-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin-bottom: 6px;
-  letter-spacing: 0.5px;
-}
-
-.form-input {
+.login-btn {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  font-family: var(--font-body);
-  color: var(--color-text);
-  background: var(--color-bg);
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-}
-
-.form-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(122, 154, 126, 0.15);
-}
-
-.form-input::placeholder {
-  color: #c4bab2;
+  --el-button-bg-color: var(--color-primary);
+  --el-button-border-color: var(--color-primary);
+  --el-button-hover-bg-color: var(--color-primary-dark);
+  --el-button-hover-border-color: var(--color-primary-dark);
+  --el-button-active-bg-color: var(--color-primary-dark);
+  letter-spacing: 4px;
+  font-size: 16px;
 }
 
 .form-error {
   color: var(--color-danger);
   font-size: 13px;
   margin-bottom: 12px;
+  text-align: center;
 }
 
-.btn-primary {
-  width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 16px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  letter-spacing: 3px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 16px rgba(122, 154, 126, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(122, 154, 126, 0.4);
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.login-footer {
-  margin-top: 28px;
+.form-footer {
+  text-align: center;
   font-size: 14px;
   color: var(--color-text-secondary);
+  margin-top: 8px;
 }
 
-.login-footer a {
+.form-footer a {
   color: var(--color-primary-dark);
   font-weight: 600;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .login-page {
+    align-items: flex-start;
+  }
+
+  .login-shell {
+    flex-direction: column;
+    max-width: 420px;
+    min-height: auto;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login-decor {
+    flex: none;
+    padding: 48px 24px 32px;
+    border-radius: 0 0 32px 32px;
+  }
+
+  .decor-features {
+    display: none;
+  }
+
+  .login-form-panel {
+    padding: 32px 24px;
+  }
 }
 </style>
