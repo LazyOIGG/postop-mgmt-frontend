@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDoctorStore } from '@/stores/doctor'
 import {
   DataBoard, UserFilled, WarningFilled, ChatDotRound, TrendCharts,
-  ArrowLeft, ArrowRight, Plus,
+  ArrowLeft, ArrowRight,
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -38,9 +38,12 @@ function logout() {
     <aside class="sidebar" :class="{ collapsed }">
       <div class="sidebar-brand">
         <div class="brand-icon">
-          <el-icon :size="20"><Plus /></el-icon>
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4C10 4 6 10 6 16s4 12 10 12c2 0 4-1 5.5-2.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+          </svg>
         </div>
-        <span v-if="!collapsed" class="brand-text">术后康复</span>
+        <span v-if="!collapsed" class="brand-text">全周期管理</span>
       </div>
 
       <nav class="sidebar-nav">
@@ -88,7 +91,7 @@ function logout() {
     </aside>
 
     <main class="main-area">
-      <header class="top-bar glass-card">
+      <header class="top-bar">
         <h2>{{ navItems.find((n) => n.name === route.name)?.label || '医生工作台' }}</h2>
       </header>
       <div class="page-content">
@@ -110,8 +113,8 @@ function logout() {
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  transition: width 0.25s ease;
+  border-right: 1px solid var(--color-border-light);
+  transition: width 0.3s ease;
   flex-shrink: 0;
 }
 
@@ -124,7 +127,7 @@ function logout() {
   align-items: center;
   gap: 10px;
   padding: 20px 18px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .brand-icon {
@@ -133,17 +136,20 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #F2EBDF;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
+  animation: breathe 4s ease-in-out infinite;
 }
 
 .brand-text {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: 1px;
   white-space: nowrap;
+  color: var(--color-primary-dark);
 }
 
 .sidebar-nav {
@@ -161,19 +167,19 @@ function logout() {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-size: 14px;
   color: var(--color-text-secondary);
 }
 
 .nav-item:hover {
-  background: var(--color-bg);
+  background: var(--color-primary-bg);
   color: var(--color-text);
 }
 
 .nav-item.active {
   background: var(--color-primary-bg);
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -187,7 +193,7 @@ function logout() {
 
 .sidebar-footer {
   padding: 12px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-light);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -205,7 +211,7 @@ function logout() {
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: color 0.15s;
+  transition: color 0.2s ease;
 }
 
 .collapse-btn:hover {
@@ -222,8 +228,8 @@ function logout() {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #F2EBDF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,13 +276,13 @@ function logout() {
 
 .top-bar {
   padding: 16px 24px;
-  border-radius: 0;
-  border-bottom: 1px solid var(--color-border);
+  background: rgba(242, 235, 223, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--color-border-light);
   position: sticky;
   top: 0;
   z-index: 50;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 .top-bar h2 {

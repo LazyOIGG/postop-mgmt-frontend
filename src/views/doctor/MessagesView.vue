@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { doctorService } from '@/services/doctor'
 import type { Patient, DoctorMessage } from '@/types'
-import { User } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -15,6 +14,21 @@ const selectedPatient = ref('')
 const selectedPatientName = ref('')
 const inputText = ref('')
 const loadingPatients = ref(false)
+const loadingMessages = ref(false)
+const patientPage = ref(1)
+const patientPageSize = ref(15)
+const msgPage = ref(1)
+const msgPageSize = ref(20)
+
+const pagedPatients = computed(() => {
+  const start = (patientPage.value - 1) * patientPageSize.value
+  return patients.value.slice(start, start + patientPageSize.value)
+})
+
+const pagedMessages = computed(() => {
+  const start = (msgPage.value - 1) * msgPageSize.value
+  return messages.value.slice(start, start + msgPageSize.value)
+})
 
 onMounted(async () => {
   loadingPatients.value = true
@@ -37,11 +51,14 @@ onMounted(async () => {
 
 async function loadMessages() {
   if (!selectedPatient.value) return
+  loadingMessages.value = true
   try {
     const res = await doctorService.getMessages(selectedPatient.value)
     if (res.data.success) messages.value = res.data.messages
   } catch {
     // silent
+  } finally {
+    loadingMessages.value = false
   }
 }
 
@@ -77,7 +94,7 @@ function selectPatient(username: string) {
           <el-skeleton :rows="6" animated />
         </div>
         <div
-          v-for="p in patients"
+          v-for="p in pagedPatients"
           :key="p.username"
           class="patient-item"
           :class="{ selected: selectedPatient === p.username }"
@@ -95,6 +112,15 @@ function selectPatient(username: string) {
             </el-tag>
           </div>
         </div>
+        <div v-if="patients.length > patientPageSize" class="patient-pagination">
+          <el-pagination
+            v-model:current-page="patientPage"
+            :page-size="patientPageSize"
+            :total="patients.length"
+            layout="prev, pager, next"
+            small
+          />
+        </div>
       </div>
 
       <div class="chat-panel glass-card">
@@ -110,10 +136,10 @@ function selectPatient(username: string) {
               <span class="chat-patient-name">{{ selectedPatientName }}</span>
             </div>
           </div>
-          <div class="chat-messages">
+          <div class="chat-messages" v-loading="loadingMessages">
             <div v-if="messages.length === 0" class="empty">暂无消息，发送第一条吧</div>
             <div
-              v-for="m in messages"
+              v-for="m in pagedMessages"
               :key="m.id"
               class="msg-bubble"
               :class="m.sender"
@@ -121,6 +147,15 @@ function selectPatient(username: string) {
               <div class="msg-content">{{ m.content }}</div>
               <div class="msg-time">{{ m.created_at?.slice(0, 16) }}</div>
             </div>
+          </div>
+          <div v-if="messages.length > msgPageSize" class="msg-pagination">
+            <el-pagination
+              v-model:current-page="msgPage"
+              :page-size="msgPageSize"
+              :total="messages.length"
+              layout="prev, pager, next"
+              small
+            />
           </div>
           <div class="chat-input-area">
             <el-input
@@ -183,7 +218,7 @@ function selectPatient(username: string) {
   padding: 10px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.2s ease;
 }
 
 .patient-item:hover, .patient-item.selected {
@@ -194,8 +229,8 @@ function selectPatient(username: string) {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #F2EBDF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,7 +270,7 @@ function selectPatient(username: string) {
 
 .chat-header {
   padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .chat-patient-info {
@@ -248,8 +283,8 @@ function selectPatient(username: string) {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #F2EBDF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,7 +316,7 @@ function selectPatient(username: string) {
 .msg-bubble {
   max-width: 70%;
   padding: 10px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -289,16 +324,16 @@ function selectPatient(username: string) {
 .msg-bubble.doctor {
   align-self: flex-end;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 8px rgba(122,154,126,0.2);
+  color: #F2EBDF;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 2px 8px rgba(96,108,56,0.2);
 }
 
 .msg-bubble.patient {
   align-self: flex-start;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-bottom-left-radius: 4px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-light);
+  border-bottom-left-radius: 8px;
 }
 
 .msg-content {
@@ -311,9 +346,21 @@ function selectPatient(username: string) {
   margin-top: 4px;
 }
 
+.patient-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+}
+
+.msg-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 0;
+}
+
 .chat-input-area {
   padding: 14px 18px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-light);
 }
 
 .chat-input-area .el-input {

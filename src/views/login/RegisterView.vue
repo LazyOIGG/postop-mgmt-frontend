@@ -55,11 +55,17 @@ async function handleRegister() {
       <!-- Decorative Panel -->
       <div class="register-decor">
         <div class="decor-overlay">
-          <div class="decor-logo">+</div>
-          <h1>术后康复</h1>
-          <p>Postoperative Recovery Management System</p>
+          <div class="decor-logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <path d="M16 4C10 4 6 10 6 16s4 12 10 12c2 0 4-1 5.5-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M16 8c-3 0-6 3-6 8s3 8 6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+              <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <h1>患者全周期</h1>
+          <p class="decor-subtitle">管理系统</p>
           <div class="decor-quote">
-            <span>"</span>加入我们，开启科学康复之旅<span>"</span>
+            科学康复，全程守护
           </div>
         </div>
       </div>
@@ -69,7 +75,7 @@ async function handleRegister() {
         <div class="form-wrapper stagger-item stagger-1">
           <div class="form-header">
             <h2>创建账号</h2>
-            <p>加入术后康复管理平台</p>
+            <p>加入患者全周期管理平台</p>
           </div>
 
           <el-form
@@ -158,7 +164,7 @@ async function handleRegister() {
 /* ===== Decorative Panel ===== */
 .register-decor {
   flex: 1;
-  background: linear-gradient(160deg, #5a7a5e 0%, #7a9a7e 30%, #8b7e9e 100%);
+  background: linear-gradient(160deg, #4A5428 0%, #606C38 30%, #8B9D83 70%, #B08B6E 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -172,7 +178,7 @@ async function handleRegister() {
   inset: 0;
   background:
     radial-gradient(circle at 20% 80%, rgba(255,255,255,0.06) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 50%);
+    radial-gradient(circle at 80% 20%, rgba(192,142,58,0.12) 0%, transparent 50%);
 }
 
 .decor-overlay {
@@ -180,50 +186,46 @@ async function handleRegister() {
   z-index: 1;
   padding: 48px 40px;
   text-align: center;
-  color: #fff;
+  color: #F2EBDF;
 }
 
 .decor-logo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 20px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.18);
-  font-size: 32px;
-  font-weight: 300;
+  background: rgba(255,255,255,0.12);
   border-radius: var(--radius-lg);
   backdrop-filter: blur(8px);
+  animation: breathe 4s ease-in-out infinite;
+  color: #F2EBDF;
 }
 
 .register-decor h1 {
-  color: #fff;
-  font-size: 28px;
-  letter-spacing: 4px;
-  margin-bottom: 8px;
+  color: #F8F3EB;
   font-family: var(--font-display);
-  font-weight: 400;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
 }
 
-.register-decor p {
-  font-size: 13px;
-  opacity: 0.75;
-  letter-spacing: 1px;
+.decor-subtitle {
+  font-size: 16px;
+  opacity: 0.7;
+  letter-spacing: 6px;
+  font-weight: 300;
 }
 
 .decor-quote {
-  margin-top: 36px;
-  font-size: 16px;
-  opacity: 0.7;
+  margin-top: 40px;
+  font-size: 15px;
+  opacity: 0.6;
+  letter-spacing: 2px;
   line-height: 1.8;
-  font-style: italic;
-}
-
-.decor-quote span {
-  font-size: 28px;
-  line-height: 0;
-  vertical-align: middle;
+  font-family: var(--font-display);
 }
 
 /* ===== Form Panel ===== */
@@ -267,13 +269,10 @@ async function handleRegister() {
 
 .register-btn {
   width: 100%;
-  --el-button-bg-color: var(--color-primary);
-  --el-button-border-color: var(--color-primary);
-  --el-button-hover-bg-color: var(--color-primary-dark);
-  --el-button-hover-border-color: var(--color-primary-dark);
-  --el-button-active-bg-color: var(--color-primary-dark);
   letter-spacing: 4px;
   font-size: 16px;
+  height: 44px;
+  border-radius: var(--radius-md) !important;
 }
 
 .form-error {
@@ -291,7 +290,7 @@ async function handleRegister() {
 }
 
 .form-footer a {
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
   font-weight: 600;
 }
 

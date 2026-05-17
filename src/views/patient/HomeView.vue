@@ -6,18 +6,19 @@ import { reminderService } from '@/services/reminder'
 import type { OverviewData, Reminder } from '@/types'
 import { ChatDotRound, Document, User } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
-import 'echarts'
+import '@/composables/useECharts'
 
 const router = useRouter()
 const overview = ref<OverviewData | null>(null)
 const reminders = ref<Reminder[]>([])
 const todayPending = ref(0)
+const loading = ref(true)
 
 const quickActions = [
-  { label: 'AI 问诊', icon: ChatDotRound, gradient: 'linear-gradient(135deg, #7a9a7e, #5a7a5e)', path: '/patient/chat' },
-  { label: '健康评估', icon: Document, gradient: 'linear-gradient(135deg, #d4956a, #c57e4e)', path: '/patient/chat' },
-  { label: '每日打卡', icon: Document, gradient: 'linear-gradient(135deg, #8b7e9e, #6d5f7e)', path: '/patient/checkin' },
-  { label: '查看档案', icon: User, gradient: 'linear-gradient(135deg, #7e9e9b, #5e7e7b)', path: '/patient/profile' },
+  { label: 'AI 问诊', icon: ChatDotRound, color: '#606C38', bg: 'rgba(96,108,56,0.1)', path: '/patient/chat' },
+  { label: '健康评估', icon: Document, color: '#C08E3A', bg: 'rgba(192,142,58,0.1)', path: '/patient/chat' },
+  { label: '每日打卡', icon: Document, color: '#B08B6E', bg: 'rgba(176,139,110,0.12)', path: '/patient/checkin' },
+  { label: '查看档案', icon: User, color: '#8B9D83', bg: 'rgba(139,157,131,0.12)', path: '/patient/profile' },
 ]
 
 const trendOption = computed(() => {
@@ -31,20 +32,20 @@ const trendOption = computed(() => {
     legend: {
       data: ['体温 °C', '心率 bpm'],
       bottom: 0,
-      textStyle: { color: '#8a7e74', fontSize: 11 },
+      textStyle: { color: '#7A6F5F', fontSize: 11 },
     },
     grid: { left: 8, right: 24, top: 8, bottom: 32 },
     xAxis: {
       type: 'category',
       data: dates.length > 0 ? dates : ['无数据'],
-      axisLine: { lineStyle: { color: '#e8e0d8' } },
+      axisLine: { lineStyle: { color: '#D4C9B8' } },
       axisTick: { show: false },
-      axisLabel: { color: '#8a7e74', fontSize: 10 },
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#f0ece8' } },
-      axisLabel: { color: '#8a7e74', fontSize: 10 },
+      splitLine: { lineStyle: { color: '#E0D6C8' } },
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
     },
     series: [
       {
@@ -54,15 +55,15 @@ const trendOption = computed(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { color: '#d4956a', width: 2 },
-        itemStyle: { color: '#d4956a' },
+        lineStyle: { color: '#C08E3A', width: 2 },
+        itemStyle: { color: '#C08E3A' },
         areaStyle: {
           color: {
             type: 'linear',
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(212,149,106,0.2)' },
-              { offset: 1, color: 'rgba(212,149,106,0)' },
+              { offset: 0, color: 'rgba(192,142,58,0.15)' },
+              { offset: 1, color: 'rgba(192,142,58,0)' },
             ],
           },
         },
@@ -74,15 +75,15 @@ const trendOption = computed(() => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { color: '#7a9a7e', width: 2 },
-        itemStyle: { color: '#7a9a7e' },
+        lineStyle: { color: '#606C38', width: 2 },
+        itemStyle: { color: '#606C38' },
         areaStyle: {
           color: {
             type: 'linear',
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(122,154,126,0.2)' },
-              { offset: 1, color: 'rgba(122,154,126,0)' },
+              { offset: 0, color: 'rgba(96,108,56,0.15)' },
+              { offset: 1, color: 'rgba(96,108,56,0)' },
             ],
           },
         },
@@ -104,12 +105,14 @@ onMounted(async () => {
     }
   } catch {
     // silent
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <template>
-  <div class="home">
+  <div class="home" v-loading="loading">
     <section class="greeting stagger-item stagger-1">
       <h2>今日康复情况</h2>
       <p class="subtitle">术后第 {{ overview?.profile?.postop_day || '...' }} 天</p>
@@ -122,8 +125,8 @@ onMounted(async () => {
         class="action-card"
         @click="router.push(action.path)"
       >
-        <div class="action-icon-box" :style="{ background: action.gradient }">
-          <el-icon :size="22" color="#fff"><component :is="action.icon" /></el-icon>
+        <div class="action-icon-box" :style="{ background: action.bg, color: action.color }">
+          <el-icon :size="22"><component :is="action.icon" /></el-icon>
         </div>
         <span class="action-label">{{ action.label }}</span>
       </div>
@@ -136,7 +139,7 @@ onMounted(async () => {
         <span v-else class="all-done">全部完成</span>
       </div>
       <div v-if="reminders.length === 0" class="empty-state">
-        <el-icon :size="32" color="#d4cbc4"><Document /></el-icon>
+        <el-icon :size="32" color="#A89B8A"><Document /></el-icon>
         <p>暂无提醒，一切顺利</p>
       </div>
       <div v-for="r in reminders.slice(0, 3)" :key="r.id" class="reminder-item">
@@ -197,13 +200,13 @@ onMounted(async () => {
   padding: 18px 8px;
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .action-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
@@ -212,13 +215,12 @@ onMounted(async () => {
 }
 
 .action-icon-box {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 .action-label {
@@ -264,7 +266,7 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .reminder-item:last-child {
@@ -306,6 +308,15 @@ onMounted(async () => {
 }
 
 .trend-chart {
-  height: 240px;
+  height: clamp(200px, 35vw, 280px);
+}
+
+@media (max-width: 768px) {
+  .trend-chart {
+    height: 220px;
+  }
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

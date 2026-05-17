@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { checkinService } from '@/services/checkin'
 import type { DailyCheckinRequest, CheckinRecord } from '@/types'
-import { Check, Clock } from '@element-plus/icons-vue'
+import { Check } from '@element-plus/icons-vue'
 
 const today = new Date().toISOString().slice(0, 10)
 const submitted = ref(false)
 const history = ref<CheckinRecord[]>([])
+const loading = ref(false)
+const historyPage = ref(1)
+const historyPageSize = ref(7)
+
+const pagedHistory = computed(() => {
+  const start = (historyPage.value - 1) * historyPageSize.value
+  return history.value.slice(start, start + historyPageSize.value)
+})
 
 const form = ref<DailyCheckinRequest>({
   checkin_date: today,
@@ -36,11 +44,14 @@ async function submitCheckin() {
 }
 
 async function fetchHistory() {
+  loading.value = true
   try {
     const res = await checkinService.getRecords()
     if (res.data.success) history.value = res.data.records || []
   } catch {
     // silent
+  } finally {
+    loading.value = false
   }
 }
 
@@ -160,36 +171,47 @@ onMounted(() => fetchHistory())
     </div>
 
     <div v-else class="success-section stagger-item stagger-1">
-      <el-result
-        icon="success"
-        title="打卡成功"
-        sub-title="今天的健康数据已记录"
-      >
-        <template #extra>
-          <el-button type="primary" @click="submitted = false">继续打卡</el-button>
-        </template>
-      </el-result>
+      <div class="success-card glass-card">
+        <div class="success-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" stroke="var(--color-primary)" stroke-width="3"/>
+            <path d="M15 24l6 6 12-12" stroke="var(--color-primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>打卡成功</h3>
+        <p>今天的健康数据已记录</p>
+        <el-button type="primary" @click="submitted = false" round>继续打卡</el-button>
+      </div>
     </div>
 
-    <section v-if="history.length > 0" class="history-section stagger-item stagger-3">
+    <section v-if="history.length > 0" class="history-section stagger-item stagger-3" v-loading="loading">
       <h3>打卡记录</h3>
       <el-timeline>
         <el-timeline-item
-          v-for="r in history.slice(0, 7)"
+          v-for="r in pagedHistory"
           :key="r.id"
           :timestamp="r.checkin_date"
           placement="top"
           :icon="Check"
-          color="#7a9a7e"
+          color="#606C38"
         >
           <div class="timeline-content">
-            <span v-if="r.temperature">🌡 {{ r.temperature }}°C</span>
-            <span v-if="r.blood_pressure">💓 {{ r.blood_pressure }}</span>
-            <span v-if="r.heart_rate">❤️ {{ r.heart_rate }} bpm</span>
-            <span v-if="r.sleep_status">😴 {{ r.sleep_status }}</span>
+            <span v-if="r.temperature">{{ r.temperature }}°C</span>
+            <span v-if="r.blood_pressure">{{ r.blood_pressure }}</span>
+            <span v-if="r.heart_rate">{{ r.heart_rate }} bpm</span>
+            <span v-if="r.sleep_status">睡眠: {{ r.sleep_status }}</span>
           </div>
         </el-timeline-item>
       </el-timeline>
+      <div v-if="history.length > historyPageSize" class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="historyPage"
+          :page-size="historyPageSize"
+          :total="history.length"
+          layout="prev, pager, next"
+          small
+        />
+      </div>
     </section>
   </div>
 </template>
@@ -212,7 +234,7 @@ h2 {
 }
 
 .form-card {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   --el-card-padding: 20px;
 }
 
@@ -248,19 +270,37 @@ h2 {
 }
 
 .submit-btn {
-  --el-button-bg-color: var(--color-primary);
-  --el-button-border-color: var(--color-primary);
-  --el-button-hover-bg-color: var(--color-primary-dark);
-  --el-button-hover-border-color: var(--color-primary-dark);
-  --el-button-active-bg-color: var(--color-primary-dark);
   letter-spacing: 3px;
   font-size: 16px;
-  height: 44px;
-  border-radius: var(--radius-md);
+  height: 46px;
+  border-radius: var(--radius-md) !important;
 }
 
 .success-section {
   padding: 20px 0;
+}
+
+.success-card {
+  text-align: center;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.success-icon {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.success-card h3 {
+  font-size: 20px;
+}
+
+.success-card p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 
 .history-section h3 {
@@ -274,5 +314,18 @@ h2 {
   gap: 8px;
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+}
+
+.timeline-content span {
+  background: var(--color-surface);
+  padding: 3px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
 }
 </style>

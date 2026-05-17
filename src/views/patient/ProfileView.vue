@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { healthService } from '@/services/health'
 import type { PatientProfile, HealthAssessmentResponse } from '@/types'
-import { User, Edit, ArrowRight } from '@element-plus/icons-vue'
+import { User, Edit } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -13,6 +13,14 @@ const profile = ref<PatientProfile>({})
 const assessments = ref<HealthAssessmentResponse[]>([])
 const editMode = ref(false)
 const editForm = ref<PatientProfile>({})
+const loading = ref(true)
+const assessmentPage = ref(1)
+const assessmentPageSize = ref(5)
+
+const pagedAssessments = computed(() => {
+  const start = (assessmentPage.value - 1) * assessmentPageSize.value
+  return assessments.value.slice(start, start + assessmentPageSize.value)
+})
 
 onMounted(async () => {
   try {
@@ -37,6 +45,7 @@ function startEdit() {
 }
 
 async function saveProfile() {
+  loading.value = true
   try {
     const res = await healthService.saveProfile(editForm.value)
     if (res.data.success && res.data.profile) {
@@ -45,6 +54,8 @@ async function saveProfile() {
     editMode.value = false
   } catch {
     // silent
+  } finally {
+    loading.value = false
   }
 }
 
@@ -55,7 +66,7 @@ function logout() {
 </script>
 
 <template>
-  <div class="profile">
+  <div class="profile" v-loading="loading">
     <div class="profile-header glass-card stagger-item stagger-1">
       <div class="avatar-group">
         <div class="avatar">{{ (profile.real_name || auth.user?.username || '?')[0] }}</div>
@@ -131,7 +142,7 @@ function logout() {
       </div>
       <el-collapse v-else accordion>
         <el-collapse-item
-          v-for="a in assessments.slice(0, 5)"
+          v-for="a in pagedAssessments"
           :key="a.session_id"
         >
           <template #title>
@@ -160,6 +171,15 @@ function logout() {
           </div>
         </el-collapse-item>
       </el-collapse>
+      <div v-if="assessments.length > assessmentPageSize" class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="assessmentPage"
+          :page-size="assessmentPageSize"
+          :total="assessments.length"
+          layout="prev, pager, next"
+          small
+        />
+      </div>
     </div>
 
     <el-button
@@ -186,29 +206,30 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
+  padding: 28px 24px;
 }
 
 .avatar-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
 }
 
 .avatar {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: #F2EBDF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 28px;
   font-family: var(--font-display);
-  box-shadow: 0 4px 16px rgba(122,154,126,0.3);
+  box-shadow: 0 4px 16px rgba(96,108,56,0.25);
+  animation: breathe 4s ease-in-out infinite;
 }
 
 .avatar-group h3 {
@@ -275,6 +296,12 @@ function logout() {
   color: var(--color-text-secondary);
   line-height: 1.6;
   padding: 4px 0;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
 }
 
 .risk-reasons {

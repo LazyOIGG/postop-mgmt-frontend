@@ -4,9 +4,10 @@ import { statsService } from '@/services/doctor'
 import type { DashboardData } from '@/types'
 import { User, ChatDotRound, DataBoard, WarningFilled } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
-import 'echarts'
+import '@/composables/useECharts'
 
 const dashboard = ref<DashboardData | null>(null)
+const loading = ref(true)
 
 const riskPieOption = computed(() => {
   const highRisk = dashboard.value?.recent_high_risk?.length || 0
@@ -14,7 +15,7 @@ const riskPieOption = computed(() => {
   const normal = Math.max(0, total - highRisk)
   return {
     tooltip: { trigger: 'item' },
-    legend: { bottom: 0, textStyle: { color: '#8a7e74', fontSize: 11 } },
+    legend: { bottom: 0, textStyle: { color: '#7A6F5F', fontSize: 11 } },
     series: [
       {
         name: '患者风险',
@@ -22,11 +23,11 @@ const riskPieOption = computed(() => {
         radius: ['55%', '78%'],
         center: ['50%', '45%'],
         avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+        itemStyle: { borderRadius: 6, borderColor: '#F2EBDF', borderWidth: 3 },
         label: { show: false },
         data: [
-          { value: normal, name: '正常/低风险', itemStyle: { color: '#7a9a7e' } },
-          { value: highRisk, name: '高风险', itemStyle: { color: '#c0392b' } },
+          { value: normal, name: '正常/低风险', itemStyle: { color: '#606C38' } },
+          { value: highRisk, name: '高风险', itemStyle: { color: '#C66B3D' } },
         ],
       },
     ],
@@ -34,79 +35,69 @@ const riskPieOption = computed(() => {
 })
 
 const barOption = computed(() => {
-  const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  const ratioStats = dashboard.value?.ratio_stats as Record<string, number> | undefined
+  const entries = ratioStats ? Object.entries(ratioStats).filter(([, v]) => typeof v === 'number') : []
+
+  if (entries.length === 0) {
+    return {
+      title: { text: '暂无活动数据', left: 'center', top: 'center', textStyle: { color: '#A89B8A', fontSize: 14, fontWeight: 400 } },
+    }
+  }
+
   return {
     tooltip: { trigger: 'axis' },
-    legend: {
-      data: ['打卡数', '活跃用户'],
-      bottom: 0,
-      textStyle: { color: '#8a7e74', fontSize: 11 },
-    },
     grid: { left: 8, right: 8, top: 8, bottom: 32 },
     xAxis: {
       type: 'category',
-      data: days,
-      axisLine: { lineStyle: { color: '#e8e0d8' } },
+      data: entries.map(([k]) => k),
+      axisLine: { lineStyle: { color: '#D4C9B8' } },
       axisTick: { show: false },
-      axisLabel: { color: '#8a7e74', fontSize: 10 },
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#f0ece8' } },
-      axisLabel: { color: '#8a7e74', fontSize: 10 },
+      splitLine: { lineStyle: { color: '#E0D6C8' } },
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
     },
     series: [
       {
-        name: '打卡数',
+        name: '数值',
         type: 'bar',
-        data: [12, 18, 15, 22, 19, 14, 10],
+        data: entries.map(([, v]) => v),
         itemStyle: {
           color: {
             type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: '#a8c4aa' },
-              { offset: 1, color: '#7a9a7e' },
+              { offset: 0, color: '#8B9D83' },
+              { offset: 1, color: '#606C38' },
             ],
           },
           borderRadius: [6, 6, 0, 0],
         },
-        barWidth: 14,
-      },
-      {
-        name: '活跃用户',
-        type: 'bar',
-        data: [8, 12, 10, 16, 14, 10, 7],
-        itemStyle: {
-          color: {
-            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: '#e8b894' },
-              { offset: 1, color: '#d4956a' },
-            ],
-          },
-          borderRadius: [6, 6, 0, 0],
-        },
-        barWidth: 14,
+        barWidth: Math.max(14, 60 - entries.length * 4),
       },
     ],
   }
 })
 
 onMounted(async () => {
+  loading.value = true
   try {
     const res = await statsService.getDashboard()
     if (res.data.success) dashboard.value = res.data.data
   } catch {
     // silent
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <template>
-  <div class="dashboard">
+  <div class="dashboard" v-loading="loading">
     <div class="stat-cards stagger-item stagger-1">
       <div class="stat-card glass-card">
-        <div class="stat-icon" style="background: var(--color-primary-bg); color: var(--color-primary-dark);">
+        <div class="stat-icon" style="background: var(--color-primary-bg); color: var(--color-primary);">
           <el-icon :size="22"><User /></el-icon>
         </div>
         <div class="stat-body">
@@ -124,7 +115,7 @@ onMounted(async () => {
         </div>
       </div>
       <div class="stat-card glass-card">
-        <div class="stat-icon" style="background: var(--color-success-bg); color: var(--color-success);">
+        <div class="stat-icon" style="background: var(--color-sage-bg); color: #8B9D83;">
           <el-icon :size="22"><DataBoard /></el-icon>
         </div>
         <div class="stat-body">
@@ -149,7 +140,7 @@ onMounted(async () => {
         <v-chart class="chart" :option="riskPieOption" autoresize />
       </div>
       <div class="chart-card glass-card">
-        <h3>本周活动趋势</h3>
+        <h3>统计数据分布</h3>
         <v-chart class="chart" :option="barOption" autoresize />
       </div>
     </div>
@@ -216,6 +207,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
 }
 
 .stat-icon {
@@ -261,7 +257,7 @@ onMounted(async () => {
 }
 
 .chart {
-  height: 260px;
+  height: clamp(220px, 28vw, 320px);
 }
 
 .section {
@@ -280,12 +276,31 @@ onMounted(async () => {
   font-size: 13px;
 }
 
+@media (max-width: 1440px) {
+  .chart {
+    height: clamp(200px, 26vw, 280px);
+  }
+}
+
 @media (max-width: 1024px) {
   .stat-cards {
     grid-template-columns: repeat(2, 1fr);
   }
   .charts-row {
     grid-template-columns: 1fr;
+  }
+  .chart {
+    height: clamp(200px, 40vw, 300px);
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .chart {
+    height: 240px;
   }
 }
 </style>

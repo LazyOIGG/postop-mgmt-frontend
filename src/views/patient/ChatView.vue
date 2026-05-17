@@ -22,7 +22,10 @@ interface ChatMsg {
 
 const messages = ref<ChatMsg[]>([])
 
-const wsUrl = `ws://localhost:8000/api/v1/chat/agent/ws`
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const wsProtocol = apiBase.startsWith('https') ? 'wss' : 'ws'
+const wsHost = apiBase.replace(/^https?:\/\//, '')
+const wsUrl = `${wsProtocol}://${wsHost}/api/v1/chat/agent/ws`
 const { isConnected, lastMessage, connect, send, disconnect } = useWebSocket(
   wsUrl,
   auth.token,
@@ -149,8 +152,14 @@ async function newChat() {
 
     <div ref="messagesContainer" class="messages-container">
       <div v-if="messages.length === 0" class="welcome">
-        <div class="welcome-logo">+</div>
-        <h3>术后康复助手</h3>
+        <div class="welcome-logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4C10 4 6 10 6 16s4 12 10 12c2 0 4-1 5.5-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M16 8c-3 0-6 3-6 8s3 8 6 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+            <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3>康复助手</h3>
         <p>有任何术后康复问题，随时问我</p>
         <div class="welcome-hints">
           <span>伤口恢复注意事项</span>
@@ -229,7 +238,7 @@ async function newChat() {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.2s ease;
 }
 
 .session-item:hover, .session-item.active {
@@ -268,22 +277,21 @@ async function newChat() {
 }
 
 .welcome-logo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  font-size: 30px;
-  font-weight: 300;
+  color: #F2EBDF;
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 24px rgba(122,154,126,0.3);
+  box-shadow: 0 8px 24px rgba(96,108,56,0.25);
+  animation: breathe 4s ease-in-out infinite;
 }
 
 .welcome h3 {
-  font-size: 20px;
+  font-size: 22px;
   margin-bottom: 6px;
 }
 
@@ -301,19 +309,19 @@ async function newChat() {
 }
 
 .welcome-hints span {
-  padding: 6px 14px;
-  background: var(--color-bg);
+  padding: 7px 16px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 20px;
   font-size: 12px;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.3s ease, color 0.3s ease;
 }
 
 .welcome-hints span:hover {
   border-color: var(--color-primary);
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
 }
 
 .message {
@@ -331,22 +339,22 @@ async function newChat() {
 
 .message-bubble {
   padding: 10px 16px;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   line-height: 1.6;
 }
 
 .message.user .message-bubble {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  color: #fff;
-  border-bottom-right-radius: 6px;
-  box-shadow: 0 2px 8px rgba(122,154,126,0.25);
+  color: #F2EBDF;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 2px 10px rgba(96,108,56,0.2);
 }
 
 .message.assistant .message-bubble {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-bottom-left-radius: 6px;
+  border: 1px solid var(--color-border-light);
+  border-bottom-left-radius: 8px;
 }
 
 .message-text {

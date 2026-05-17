@@ -25,9 +25,15 @@ function isActive(tabName: string) {
 
 <template>
   <div class="patient-shell">
-    <header class="patient-header glass-card">
+    <header class="patient-header">
       <div class="header-content">
-        <h2 class="app-name">术后康复</h2>
+        <div class="header-brand">
+          <svg class="header-logo" width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4C10 4 6 10 6 16s4 12 10 12c2 0 4-1 5.5-2.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+          </svg>
+          <h2 class="app-name">患者全周期</h2>
+        </div>
         <span class="user-tag">{{ auth.user?.username }}</span>
       </div>
     </header>
@@ -48,8 +54,11 @@ function isActive(tabName: string) {
         :class="{ active: isActive(tab.name) }"
         @click="goTab(tab.path)"
       >
-        <el-icon :size="20"><component :is="tab.icon" /></el-icon>
+        <div class="tab-icon-wrap">
+          <el-icon :size="20"><component :is="tab.icon" /></el-icon>
+        </div>
         <span class="tab-label">{{ tab.label }}</span>
+        <div v-if="isActive(tab.name)" class="tab-indicator"></div>
       </div>
     </nav>
   </div>
@@ -61,46 +70,58 @@ function isActive(tabName: string) {
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
-  padding-bottom: 64px;
+  padding-bottom: 72px;
 }
 
 .patient-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  border-radius: 0;
-  border-bottom: 1px solid var(--color-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(242, 235, 223, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 14px 20px;
   max-width: 768px;
   margin: 0 auto;
   width: 100%;
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-logo {
+  color: var(--color-primary);
+}
+
 .app-name {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 18px;
   letter-spacing: 1px;
+  color: var(--color-primary-dark);
 }
 
 .user-tag {
   font-size: 12px;
   color: var(--color-text-secondary);
-  background: var(--color-bg);
-  padding: 4px 12px;
+  background: var(--color-surface);
+  padding: 5px 14px;
   border-radius: 20px;
+  border: 1px solid var(--color-border-light);
 }
 
 .patient-main {
   flex: 1;
-  padding: 16px;
+  padding: 16px 16px 0;
   max-width: 768px;
   margin: 0 auto;
   width: 100%;
@@ -113,11 +134,11 @@ function isActive(tabName: string) {
   right: 0;
   display: flex;
   justify-content: space-around;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--color-border);
-  padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  background: rgba(242, 235, 223, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--color-border-light);
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
   z-index: 100;
 }
 
@@ -125,32 +146,46 @@ function isActive(tabName: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 20px;
+  gap: 3px;
+  padding: 6px 16px;
   cursor: pointer;
-  transition: color 0.2s;
-  color: var(--color-text-secondary);
+  transition: color 0.3s ease;
+  color: var(--color-text-tertiary);
   position: relative;
 }
 
 .tab-item.active {
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
 }
 
-.tab-item.active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 0 0 3px 3px;
+.tab-icon-wrap {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.3s ease;
+}
+
+.tab-item.active .tab-icon-wrap {
+  background: var(--color-primary-bg);
 }
 
 .tab-label {
   font-size: 11px;
   font-weight: 500;
+}
+
+.tab-indicator {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 0 0 4px 4px;
+  animation: breathe 3s ease-in-out infinite;
 }
 </style>

@@ -9,6 +9,8 @@ const router = useRouter()
 const patients = ref<Patient[]>([])
 const searchQuery = ref('')
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 import { onMounted } from 'vue'
 onMounted(() => fetchPatients())
@@ -33,6 +35,11 @@ const filteredPatients = computed(() => {
       p.username?.toLowerCase().includes(q) ||
       p.real_name?.toLowerCase().includes(q),
   )
+})
+
+const pagedPatients = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredPatients.value.slice(start, start + pageSize.value)
 })
 
 function viewDetail(username: string) {
@@ -63,10 +70,10 @@ function viewDetail(username: string) {
       </div>
       <div v-else class="table-wrap">
         <el-table
-          :data="filteredPatients"
+          :data="pagedPatients"
           stripe
           style="width: 100%"
-          :header-cell-style="{ background: 'rgba(250,247,244,0.5)', color: '#8a7e74', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }"
+          :header-cell-style="{ background: 'var(--color-surface-raised)', color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: 600 }"
         >
           <el-table-column prop="username" label="用户名" min-width="120" />
           <el-table-column prop="real_name" label="姓名" min-width="100">
@@ -98,6 +105,15 @@ function viewDetail(username: string) {
             </template>
           </el-table-column>
         </el-table>
+      </div>
+      <div v-if="filteredPatients.length > pageSize" class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="filteredPatients.length"
+          layout="prev, pager, next"
+          small
+        />
       </div>
     </div>
   </div>
@@ -133,6 +149,12 @@ function viewDetail(username: string) {
 
 .loading {
   padding: 24px;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 4px;
 }
 
 .empty {

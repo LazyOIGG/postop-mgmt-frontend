@@ -1,121 +1,131 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { statsService } from '@/services/doctor'
-import type { SystemStats } from '@/types'
+import type { SystemStats, DashboardData } from '@/types'
 import { User, ChatDotRound, DataBoard, TrendCharts } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
-import 'echarts'
+import '@/composables/useECharts'
 
 const stats = ref<SystemStats | null>(null)
+const dashboard = ref<DashboardData | null>(null)
+const loading = ref(true)
 
-const userTrendOption = computed(() => ({
-  tooltip: { trigger: 'axis' },
-  legend: {
-    data: ['新增用户', '累计用户'],
-    bottom: 0,
-    textStyle: { color: '#8a7e74', fontSize: 11 },
-  },
-  grid: { left: 8, right: 8, top: 16, bottom: 32 },
-  xAxis: {
-    type: 'category',
-    data: ['3月', '4月', '5月', '6月', '7月', '8月'],
-    axisLabel: { color: '#8a7e74', fontSize: 10 },
-  },
-  yAxis: {
-    type: 'value',
-    splitLine: { lineStyle: { color: '#f0ece8' } },
-    axisLabel: { color: '#8a7e74', fontSize: 10 },
-  },
-  series: [
-    {
-      name: '新增用户',
-      type: 'bar',
-      stack: 'total',
-      data: [12, 19, 15, 23, 18, 21],
-      itemStyle: {
-        color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#a8c4aa' }, { offset: 1, color: '#7a9a7e' }] },
-        borderRadius: [0, 0, 0, 0],
+const userTrendOption = computed(() => {
+  const ratioStats = dashboard.value?.ratio_stats as Record<string, number> | undefined
+  const entries = ratioStats ? Object.entries(ratioStats).filter(([, v]) => typeof v === 'number') : []
+
+  if (entries.length === 0) {
+    return {
+      title: { text: '暂无趋势数据', left: 'center', top: 'center', textStyle: { color: '#A89B8A', fontSize: 14, fontWeight: 400 } },
+    }
+  }
+
+  return {
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { color: '#7A6F5F', fontSize: 11 } },
+    grid: { left: 8, right: 8, top: 16, bottom: 32 },
+    xAxis: {
+      type: 'category',
+      data: entries.map(([k]) => k),
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: '#E0D6C8' } },
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
+    },
+    series: [
+      {
+        name: '指标值',
+        type: 'bar',
+        data: entries.map(([, v]) => v),
+        itemStyle: {
+          color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#8B9D83' }, { offset: 1, color: '#606C38' }] },
+          borderRadius: [6, 6, 0, 0],
+        },
+        barWidth: Math.max(16, 60 - entries.length * 4),
       },
-      barWidth: 20,
-    },
-    {
-      name: '累计用户',
-      type: 'line',
-      data: [12, 31, 46, 69, 87, 108],
-      smooth: true,
-      lineStyle: { color: '#d4956a', width: 3 },
-      itemStyle: { color: '#d4956a' },
-      symbol: 'circle',
-      symbolSize: 8,
-    },
-  ],
-}))
+    ],
+  }
+})
 
 const rolePieOption = computed(() => ({
   tooltip: { trigger: 'item' },
-  legend: { bottom: 0, textStyle: { color: '#8a7e74', fontSize: 11 } },
+  legend: { bottom: 0, textStyle: { color: '#7A6F5F', fontSize: 11 } },
   series: [{
     name: '角色分布',
     type: 'pie',
     radius: ['50%', '75%'],
     center: ['50%', '45%'],
-    itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+    itemStyle: { borderRadius: 6, borderColor: '#F2EBDF', borderWidth: 3 },
     label: { show: false },
     data: [
-      { value: stats.value?.total_users || 60, name: '患者', itemStyle: { color: '#7a9a7e' } },
-      { value: Math.round((stats.value?.total_users || 60) * 0.1), name: '医生', itemStyle: { color: '#d4956a' } },
+      { value: stats.value?.total_users || 0, name: '患者', itemStyle: { color: '#606C38' } },
+      { value: Math.max(1, Math.round((stats.value?.total_users || 0) * 0.1)), name: '医生', itemStyle: { color: '#C08E3A' } },
     ],
   }],
 }))
 
-const msgTrendOption = computed(() => ({
-  tooltip: { trigger: 'axis' },
-  legend: {
-    data: ['消息数'],
-    bottom: 0,
-    textStyle: { color: '#8a7e74', fontSize: 11 },
-  },
-  grid: { left: 8, right: 8, top: 16, bottom: 32 },
-  xAxis: {
-    type: 'category',
-    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-    axisLabel: { color: '#8a7e74', fontSize: 10 },
-  },
-  yAxis: {
-    type: 'value',
-    splitLine: { lineStyle: { color: '#f0ece8' } },
-    axisLabel: { color: '#8a7e74', fontSize: 10 },
-  },
-  series: [{
-    name: '消息数',
-    type: 'line',
-    data: [42, 58, 47, 63, 55, 38, 29],
-    smooth: true,
-    areaStyle: {
-      color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(139,126,158,0.2)' }, { offset: 1, color: 'rgba(139,126,158,0)' }] },
+const msgTrendOption = computed(() => {
+  const s = stats.value
+  if (!s) {
+    return {
+      title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#A89B8A', fontSize: 14, fontWeight: 400 } },
+    }
+  }
+
+  return {
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { color: '#7A6F5F', fontSize: 11 } },
+    grid: { left: 8, right: 8, top: 16, bottom: 32 },
+    xAxis: {
+      type: 'category',
+      data: ['总用户', '总会话', '总消息', '今日活跃'],
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
     },
-    lineStyle: { color: '#8b7e9e', width: 2 },
-    itemStyle: { color: '#8b7e9e' },
-    symbol: 'circle',
-    symbolSize: 6,
-  }],
-}))
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: '#E0D6C8' } },
+      axisLabel: { color: '#7A6F5F', fontSize: 10 },
+    },
+    series: [{
+      name: '数量',
+      type: 'bar',
+      data: [s.total_users, s.total_sessions, s.total_messages, s.active_today],
+      itemStyle: {
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: '#D4A854' }, { offset: 1, color: '#C08E3A' }],
+        },
+        borderRadius: [6, 6, 0, 0],
+      },
+      barWidth: 24,
+    }],
+  }
+})
 
 onMounted(async () => {
+  loading.value = true
   try {
-    const res = await statsService.getSystemStats()
-    if (res.data.success) stats.value = res.data.stats
+    const [statsRes, dashRes] = await Promise.all([
+      statsService.getSystemStats(),
+      statsService.getDashboard(),
+    ])
+    if (statsRes.data.success) stats.value = statsRes.data.stats
+    if (dashRes.data.success) dashboard.value = dashRes.data.data
   } catch {
     // silent
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <template>
-  <div class="statistics">
+  <div class="statistics" v-loading="loading">
     <div class="stat-grid stagger-item stagger-1">
       <div class="big-stat glass-card">
-        <div class="big-stat-icon" style="background: var(--color-primary-bg); color: var(--color-primary-dark);">
+        <div class="big-stat-icon" style="background: var(--color-primary-bg); color: var(--color-primary);">
           <el-icon :size="28"><User /></el-icon>
         </div>
         <span class="big-number">{{ stats?.total_users || 0 }}</span>
@@ -129,13 +139,13 @@ onMounted(async () => {
         <span class="big-label">总会话数</span>
       </div>
       <div class="big-stat glass-card">
-        <div class="big-stat-icon" style="background: rgba(139,126,158,0.12); color: #8b7e9e;">
+        <div class="big-stat-icon" style="background: rgba(176,139,110,0.1); color: #B08B6E;">
           <el-icon :size="28"><DataBoard /></el-icon>
         </div>
         <span class="big-number">{{ stats?.total_messages || 0 }}</span>
         <span class="big-label">总消息数</span>
       </div>
-      <div class="big-stat glass-card accent">
+      <div class="big-stat glass-card">
         <div class="big-stat-icon" style="background: var(--color-danger-bg); color: var(--color-danger);">
           <el-icon :size="28"><TrendCharts /></el-icon>
         </div>
@@ -146,7 +156,7 @@ onMounted(async () => {
 
     <div class="charts-row stagger-item stagger-2">
       <div class="chart-card glass-card">
-        <h3>用户增长趋势</h3>
+        <h3>统计指标分布</h3>
         <v-chart class="chart" :option="userTrendOption" autoresize />
       </div>
       <div class="chart-card glass-card">
@@ -157,7 +167,7 @@ onMounted(async () => {
 
     <div class="charts-row stagger-item stagger-3">
       <div class="chart-card glass-card">
-        <h3>本周消息量趋势</h3>
+        <h3>系统核心指标</h3>
         <v-chart class="chart" :option="msgTrendOption" autoresize />
       </div>
       <div class="ratio-section glass-card">
@@ -207,6 +217,11 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  transition: transform 0.3s ease;
+}
+
+.big-stat:hover {
+  transform: translateY(-2px);
 }
 
 .big-stat-icon {
@@ -223,10 +238,6 @@ onMounted(async () => {
   font-family: var(--font-display);
   color: var(--color-text);
   line-height: 1.2;
-}
-
-.big-stat.accent .big-number {
-  color: var(--color-danger);
 }
 
 .big-label {
@@ -250,7 +261,7 @@ onMounted(async () => {
 }
 
 .chart {
-  height: 260px;
+  height: clamp(220px, 28vw, 320px);
 }
 
 .ratio-section {
@@ -275,6 +286,7 @@ onMounted(async () => {
   padding: 14px 16px;
   background: var(--color-bg);
   border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
 }
 
 .ratio-label {
@@ -285,7 +297,13 @@ onMounted(async () => {
 .ratio-value {
   font-size: 22px;
   font-family: var(--font-display);
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
+}
+
+@media (max-width: 1440px) {
+  .chart {
+    height: clamp(200px, 26vw, 280px);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -294,6 +312,19 @@ onMounted(async () => {
   }
   .charts-row {
     grid-template-columns: 1fr;
+  }
+  .chart {
+    height: clamp(200px, 40vw, 300px);
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .chart {
+    height: 240px;
   }
 }
 </style>

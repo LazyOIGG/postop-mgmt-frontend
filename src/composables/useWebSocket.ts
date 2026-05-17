@@ -9,8 +9,12 @@ export function useWebSocket(url: string, token: string) {
   function connect() {
     if (ws.value?.readyState === WebSocket.OPEN) return
 
-    const fullUrl = `${url}?token=${token}`
-    ws.value = new WebSocket(fullUrl)
+    const wsUrl = new URL(url)
+    // NOTE: Token in URL is required by the backend WebSocket auth (FastAPI
+    // WebSocket upgrade requests cannot carry custom headers). Consider using
+    // a short-lived WebSocket-specific token in production.
+    wsUrl.searchParams.set('token', token)
+    ws.value = new WebSocket(wsUrl.toString())
 
     ws.value.onopen = () => {
       isConnected.value = true

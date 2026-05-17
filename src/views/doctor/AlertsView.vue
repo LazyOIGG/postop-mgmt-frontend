@@ -1,20 +1,33 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDoctorStore } from '@/stores/doctor'
 import { Bell } from '@element-plus/icons-vue'
 
 const doctorStore = useDoctorStore()
 const activeTab = ref('pending')
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+const loading = ref(false)
+
+const pagedAlerts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return doctorStore.alerts.slice(start, start + pageSize.value)
+})
 
 onMounted(async () => {
   doctorStore.alertFilter = 'pending'
+  loading.value = true
   await doctorStore.fetchAlerts()
+  loading.value = false
 })
 
 async function switchTab(tab: string) {
   activeTab.value = tab
   doctorStore.alertFilter = tab as 'pending' | 'processed'
+  loading.value = true
   await doctorStore.fetchAlerts()
+  loading.value = false
 }
 
 async function handleProcess(alertId: number) {
@@ -23,7 +36,7 @@ async function handleProcess(alertId: number) {
 </script>
 
 <template>
-  <div class="alerts">
+  <div class="alerts" v-loading="loading">
     <el-tabs v-model="activeTab" class="alert-tabs stagger-item stagger-1" @tab-change="switchTab">
       <el-tab-pane label="待处理" name="pending">
         <template #label>
@@ -45,14 +58,14 @@ async function handleProcess(alertId: number) {
         <el-empty description="暂无预警" :image-size="80" />
       </div>
       <el-card
-        v-for="alert in doctorStore.alerts"
+        v-for="alert in pagedAlerts"
         :key="alert.id"
         class="alert-card"
-        shadow="hover"
+        shadow="never"
       >
         <div class="alert-header">
           <div class="alert-type-row">
-            <el-icon :size="16" color="#c0392b"><Bell /></el-icon>
+            <el-icon :size="16" color="#C66B3D"><Bell /></el-icon>
             <span class="alert-type">{{ alert.type || '预警' }}</span>
           </div>
           <el-tag
@@ -80,6 +93,15 @@ async function handleProcess(alertId: number) {
         </el-button>
       </el-card>
     </div>
+    <div v-if="doctorStore.alerts.length > pageSize" class="pagination-wrap">
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="doctorStore.alerts.length"
+        layout="prev, pager, next"
+        small
+      />
+    </div>
   </div>
 </template>
 
@@ -92,9 +114,10 @@ async function handleProcess(alertId: number) {
 
 .alert-tabs {
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 4px 16px;
   box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
 }
 
 .tab-label-inner {
@@ -114,7 +137,7 @@ async function handleProcess(alertId: number) {
 }
 
 .alert-card {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
 .alert-card .el-card__body {
@@ -138,7 +161,6 @@ async function handleProcess(alertId: number) {
   font-size: 12px;
   font-weight: 600;
   color: var(--color-danger);
-  text-transform: uppercase;
   letter-spacing: 1px;
 }
 
@@ -157,7 +179,14 @@ async function handleProcess(alertId: number) {
   margin-bottom: 8px;
 }
 
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
 .process-btn {
   margin-top: 4px;
+  border-radius: var(--radius-sm) !important;
 }
 </style>
