@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { overviewService } from '@/services/checkin'
 import { reminderService } from '@/services/reminder'
 import type { OverviewData, Reminder } from '@/types'
-import { ChatDotRound, Document, User } from '@element-plus/icons-vue'
+import { ChatDotRound, Document, User, Aim } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
 import '@/composables/useECharts'
 
@@ -16,7 +16,7 @@ const loading = ref(true)
 
 const quickActions = [
   { label: 'AI 问诊', icon: ChatDotRound, color: '#606C38', bg: 'rgba(96,108,56,0.1)', path: '/patient/chat' },
-  { label: '健康评估', icon: Document, color: '#C08E3A', bg: 'rgba(192,142,58,0.1)', path: '/patient/chat' },
+  { label: '康复计划', icon: Aim, color: '#C08E3A', bg: 'rgba(192,142,58,0.12)', path: '/patient/rehab' },
   { label: '每日打卡', icon: Document, color: '#B08B6E', bg: 'rgba(176,139,110,0.12)', path: '/patient/checkin' },
   { label: '查看档案', icon: User, color: '#8B9D83', bg: 'rgba(139,157,131,0.12)', path: '/patient/profile' },
 ]

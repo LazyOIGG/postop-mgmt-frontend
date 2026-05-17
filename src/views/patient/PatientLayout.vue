@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { HomeFilled, ChatDotRound, Document, User } from '@element-plus/icons-vue'
+import { HomeFilled, ChatDotRound, Document, User, Aim } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -11,6 +11,7 @@ const tabs = [
   { name: 'PatientHome', label: '首页', icon: HomeFilled, path: '/patient/home' },
   { name: 'PatientChat', label: 'AI助手', icon: ChatDotRound, path: '/patient/chat' },
   { name: 'PatientCheckin', label: '打卡', icon: Document, path: '/patient/checkin' },
+  { name: 'PatientRehab', label: '康复', icon: Aim, path: '/patient/rehab' },
   { name: 'PatientProfile', label: '我的', icon: User, path: '/patient/profile' },
 ]
 

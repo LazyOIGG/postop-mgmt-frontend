@@ -188,3 +188,50 @@ export interface OverviewData {
   latest_assessment: Record<string, unknown> | null
   profile: Record<string, unknown> | null
 }
+
+// ===== 康复计划 =====
+export interface RehabPlan {
+  id: number
+  username: string
+  surgery_type: string
+  plan_title: string
+  current_phase: '急性期' | '恢复期' | '巩固期'
+  status: 'active' | 'completed' | 'cancelled'
+  generated_plan: string | null
+  created_at: string
+  updated_at: string
+  phases?: Record<string, RehabTask[]>
+}
+
+export interface RehabTask {
+  id: number
+  plan_id: number
+  username: string
+  phase: string
+  task_day: number
+  task_date: string
+  task_type: 'medication' | 'exercise' | 'diet' | 'review' | 'other'
+  task_content: string
+  reminder_id: number | null
+  status: 'pending' | 'completed' | 'skipped'
+  plan_title?: string
+  surgery_type?: string
+}
+
+export interface RehabPlanGenerateRequest {
+  surgery_type: string
+  plan_title?: string
+}
+
+export interface GeneratePlanResponse {
+  success: boolean
+  plan_id?: number
+  plan_title?: string
+  surgery_type?: string
+  current_phase?: string
+  phases?: string[]
+  total_tasks?: number
+  notes?: string
+  generated_plan?: Record<string, unknown>
+  error?: string
+}

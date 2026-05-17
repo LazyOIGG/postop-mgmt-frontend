@@ -36,6 +36,8 @@ onMounted(async () => {
     }
   } catch {
     // silent
+  } finally {
+    loading.value = false
   }
 })
 
