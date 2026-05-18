@@ -21,7 +21,7 @@ async function fetchPatients() {
     const res = await doctorService.getPatients()
     if (res.data.success) patients.value = res.data.patients
   } catch {
-    // silent
+    ElMessage.error('加载患者列表失败，请稍后重试')
   } finally {
     loading.value = false
   }

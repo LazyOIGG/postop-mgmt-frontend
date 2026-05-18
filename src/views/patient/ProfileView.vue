@@ -35,7 +35,7 @@ onMounted(async () => {
       assessments.value = aRes.data.records || []
     }
   } catch {
-    // silent
+    ElMessage.error('加载档案数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -55,7 +55,7 @@ async function saveProfile() {
     }
     editMode.value = false
   } catch {
-    // silent
+    ElMessage.error('保存档案失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -73,7 +73,7 @@ function logout() {
       <div class="avatar-group">
         <div class="avatar">{{ (profile.real_name || auth.user?.username || '?')[0] }}</div>
         <h3>{{ profile.real_name || auth.user?.username || '用户' }}</h3>
-        <p>{{ profile.health_stage || '术后康复中' }}</p>
+        <p>{{ profile.health_stage || '健康管理中' }}</p>
       </div>
       <el-button
         :icon="Edit"

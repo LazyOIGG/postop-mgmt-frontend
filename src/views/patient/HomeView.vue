@@ -104,7 +104,7 @@ onMounted(async () => {
       todayPending.value = rRes.data.today_stats?.pending_count || 0
     }
   } catch {
-    // silent
+    ElMessage.error('加载首页数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -114,8 +114,8 @@ onMounted(async () => {
 <template>
   <div class="home" v-loading="loading">
     <section class="greeting stagger-item stagger-1">
-      <h2>今日康复情况</h2>
-      <p class="subtitle">术后第 {{ overview?.profile?.postop_day || '...' }} 天</p>
+      <h2>今日健康情况</h2>
+      <p class="subtitle">{{ overview?.profile?.health_stage || '健康管理进行中' }}</p>
     </section>
 
     <section class="quick-actions stagger-item stagger-2">

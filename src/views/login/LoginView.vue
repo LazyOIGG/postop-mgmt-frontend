@@ -56,7 +56,7 @@ async function handleLogin() {
           <div class="decor-features">
             <div class="feature-item">
               <span class="feature-dot"></span>
-              <span>术后智能康复管理</span>
+              <span>全周期健康管理</span>
             </div>
             <div class="feature-item">
               <span class="feature-dot"></span>

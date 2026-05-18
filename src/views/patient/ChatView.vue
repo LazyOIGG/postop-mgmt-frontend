@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
-import { chatService, sessionService } from '@/services/chat'
+import { chatService } from '@/services/chat'
+import { multimodalService } from '@/services/multimodal'
+import { healthService } from '@/services/health'
 import { useWebSocket } from '@/composables/useWebSocket'
-import { Plus, ChatDotRound } from '@element-plus/icons-vue'
+import { Plus, ChatDotRound, Picture, Microphone, VideoPause } from '@element-plus/icons-vue'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
@@ -14,10 +16,23 @@ const isStreaming = ref(false)
 const showSessions = ref(false)
 const messagesContainer = ref<HTMLElement>()
 
+// Image upload
+const imageInput = ref<HTMLInputElement>()
+const uploadingImage = ref(false)
+
+// Voice recording
+const isRecording = ref(false)
+const recordingSeconds = ref(0)
+let mediaRecorder: MediaRecorder | null = null
+let recordedChunks: Blob[] = []
+let recordingTimer: ReturnType<typeof setInterval> | null = null
+
 interface ChatMsg {
   role: 'user' | 'assistant' | 'system'
   content: string
   agent?: string
+  type?: 'text' | 'image' | 'voice'
+  imageUrl?: string
 }
 
 const messages = ref<ChatMsg[]>([])
@@ -36,6 +51,11 @@ onMounted(async () => {
     await chatStore.fetchSessions(auth.user.username)
   }
   connect()
+})
+
+onUnmounted(() => {
+  stopRecording()
+  disconnect()
 })
 
 watch(lastMessage, (data: any) => {
@@ -61,7 +81,7 @@ async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || isStreaming.value) return
 
-  messages.value.push({ role: 'user', content: text })
+  messages.value.push({ role: 'user', content: text, type: 'text' })
   inputText.value = ''
   isStreaming.value = true
   scrollToBottom()
@@ -90,6 +110,152 @@ async function sendMessage() {
   }
 }
 
+// ── Image upload ─────────────────────────────────────────────────
+
+function triggerImageUpload() {
+  imageInput.value?.click()
+}
+
+async function onImageSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = ''
+
+  // Show preview in chat
+  const url = URL.createObjectURL(file)
+  messages.value.push({
+    role: 'user',
+    content: `[图片] ${file.name}`,
+    type: 'image',
+    imageUrl: url,
+  })
+  uploadingImage.value = true
+  isStreaming.value = true
+  scrollToBottom()
+
+  try {
+    const res = await healthService.assessImage(file, chatStore.currentSessionId ? String(chatStore.currentSessionId) : undefined)
+    if (res.data.success) {
+      const advice = res.data.advice || '已识别图片内容，但未生成分析结果。'
+      const riskLevel = res.data.risk_level || '低风险'
+      const riskReasons = res.data.risk_reasons || []
+      let content = advice
+      if (riskLevel !== '低风险') {
+        content = `【风险等级：${riskLevel}】\n${riskReasons.length ? '风险因素：' + riskReasons.join('、') + '\n' : ''}\n${advice}`
+      }
+      messages.value.push({ role: 'assistant', content })
+      if (res.data.session_id && !chatStore.currentSessionId) {
+        chatStore.setCurrentSession(res.data.session_id)
+      }
+    } else {
+      messages.value.push({ role: 'assistant', content: '图片识别失败，请重试。' })
+    }
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail || err?.message || '未知错误'
+    messages.value.push({ role: 'assistant', content: `图片处理失败：${detail}` })
+  } finally {
+    uploadingImage.value = false
+    isStreaming.value = false
+    scrollToBottom()
+  }
+}
+
+// ── Voice recording ──────────────────────────────────────────────
+
+async function toggleRecording() {
+  if (isRecording.value) {
+    stopRecording()
+  } else {
+    await startRecording()
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+    recordedChunks = []
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordedChunks.push(e.data)
+    }
+
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop())
+      const blob = new Blob(recordedChunks, { type: 'audio/webm' })
+      await handleVoiceResult(blob)
+    }
+
+    mediaRecorder.start()
+    isRecording.value = true
+    recordingSeconds.value = 0
+    recordingTimer = setInterval(() => {
+      recordingSeconds.value++
+      // Auto-stop at 60s
+      if (recordingSeconds.value >= 60) stopRecording()
+    }, 1000)
+  } catch {
+    ElMessage.error('无法访问麦克风，请检查权限设置')
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop()
+  }
+  isRecording.value = false
+  if (recordingTimer) {
+    clearInterval(recordingTimer)
+    recordingTimer = null
+  }
+}
+
+async function handleVoiceResult(blob: Blob) {
+  const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
+
+  messages.value.push({
+    role: 'user',
+    content: `[语音 ${recordingSeconds.value}"] 正在识别...`,
+    type: 'voice',
+  })
+  isStreaming.value = true
+  scrollToBottom()
+
+  try {
+    const res = await multimodalService.speechSTT(file)
+    if (res.data.success && res.data.text) {
+      // Update the user message with recognized text
+      const lastUser = messages.value[messages.value.length - 1]
+      if (lastUser && lastUser.type === 'voice') {
+        lastUser.content = `[语音] ${res.data.text}`
+      }
+      // Show AI answer if available
+      if (res.data.answer) {
+        messages.value.push({ role: 'assistant', content: res.data.answer })
+      }
+    } else {
+      const lastUser = messages.value[messages.value.length - 1]
+      if (lastUser && lastUser.type === 'voice') {
+        lastUser.content = `[语音] 识别失败`
+      }
+      messages.value.push({ role: 'assistant', content: '语音识别失败，请重试或改用文字输入。' })
+    }
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail || err?.message || '未知错误'
+    const lastUser = messages.value[messages.value.length - 1]
+    if (lastUser && lastUser.type === 'voice') {
+      lastUser.content = `[语音] 发送失败`
+    }
+    messages.value.push({ role: 'assistant', content: `语音处理失败：${detail}` })
+  } finally {
+    isStreaming.value = false
+    scrollToBottom()
+  }
+}
+
+// ── Utils ────────────────────────────────────────────────────────
+
 function scrollToBottom() {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -98,10 +264,20 @@ function scrollToBottom() {
   })
 }
 
+function detectMsgType(content: string): 'text' | 'image' | 'voice' {
+  if (content.startsWith('[图片') || content.startsWith('[上传病例')) return 'image'
+  if (content.startsWith('[语音')) return 'voice'
+  return 'text'
+}
+
 async function loadSession(sessionId: number) {
   chatStore.setCurrentSession(sessionId)
   await chatStore.fetchMessages(sessionId, auth.user?.username)
-  messages.value = chatStore.messages.map((m) => ({ role: m.role, content: m.content }))
+  messages.value = chatStore.messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+    type: detectMsgType(m.content),
+  }))
   showSessions.value = false
   scrollToBottom()
 }
@@ -112,6 +288,12 @@ async function newChat() {
   chatStore.setCurrentSession(null)
   showSessions.value = false
   await chatStore.createSession(auth.user.username)
+}
+
+function formatTime(sec: number) {
+  const m = Math.floor(sec / 60).toString().padStart(2, '0')
+  const s = (sec % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
 }
 </script>
 
@@ -160,11 +342,12 @@ async function newChat() {
           </svg>
         </div>
         <h3>康复助手</h3>
-        <p>有任何术后康复问题，随时问我</p>
+        <p>有任何健康问题，随时问我</p>
         <div class="welcome-hints">
-          <span>伤口恢复注意事项</span>
-          <span>今日饮食建议</span>
-          <span>康复运动指导</span>
+          <span @click="inputText = '伤口恢复注意事项'">伤口恢复注意事项</span>
+          <span @click="inputText = '今日饮食建议'">今日饮食建议</span>
+          <span @click="inputText = '康复运动指导'">康复运动指导</span>
+          <span @click="triggerImageUpload">上传检查报告</span>
         </div>
       </div>
       <div
@@ -174,6 +357,14 @@ async function newChat() {
         :class="msg.role"
       >
         <div class="message-bubble">
+          <!-- Image preview -->
+          <div v-if="msg.type === 'image' && msg.imageUrl" class="message-image">
+            <el-image :src="msg.imageUrl" fit="cover" style="max-width: 200px; max-height: 160px; border-radius: 12px;" />
+          </div>
+          <!-- Voice indicator -->
+          <div v-if="msg.type === 'voice'" class="message-voice">
+            <el-icon :size="16"><Microphone /></el-icon>
+          </div>
           <div class="message-text">{{ msg.content }}</div>
           <div v-if="msg.agent" class="message-meta">{{ msg.agent }}</div>
         </div>
@@ -184,25 +375,67 @@ async function newChat() {
     </div>
 
     <div class="input-area">
-      <el-input
-        v-model="inputText"
-        placeholder="输入您的问题..."
-        size="large"
-        class="chat-input"
-        @keyup.enter="sendMessage"
-      >
-        <template #suffix>
-          <el-button
-            type="primary"
-            :disabled="!inputText.trim() || isStreaming"
-            size="small"
-            round
-            @click="sendMessage"
-          >
-            发送
-          </el-button>
-        </template>
-      </el-input>
+      <!-- Hidden file input for image -->
+      <input
+        ref="imageInput"
+        type="file"
+        accept="image/*"
+        style="display: none"
+        @change="onImageSelected"
+      />
+
+      <div class="input-row">
+        <!-- Image upload button -->
+        <el-button
+          circle
+          :disabled="isStreaming || uploadingImage"
+          @click="triggerImageUpload"
+          class="input-action-btn"
+        >
+          <el-icon :size="18"><Picture /></el-icon>
+        </el-button>
+
+        <!-- Voice record button -->
+        <el-button
+          circle
+          :type="isRecording ? 'danger' : 'default'"
+          :disabled="isStreaming && !isRecording"
+          @click="toggleRecording"
+          class="input-action-btn"
+          :class="{ recording: isRecording }"
+        >
+          <el-icon v-if="!isRecording" :size="18"><Microphone /></el-icon>
+          <el-icon v-else :size="18"><VideoPause /></el-icon>
+        </el-button>
+
+        <!-- Text input -->
+        <el-input
+          v-model="inputText"
+          :placeholder="isRecording ? `录音中 ${formatTime(recordingSeconds)}...` : '输入您的问题...'"
+          size="large"
+          class="chat-input"
+          :disabled="isRecording"
+          @keyup.enter="sendMessage"
+        >
+          <template #suffix>
+            <el-button
+              type="primary"
+              :disabled="(!inputText.trim() && !isRecording) || isStreaming"
+              size="small"
+              round
+              @click="sendMessage"
+            >
+              发送
+            </el-button>
+          </template>
+        </el-input>
+      </div>
+
+      <!-- Recording indicator -->
+      <div v-if="isRecording" class="recording-bar">
+        <div class="recording-pulse"></div>
+        <span>正在录音 {{ formatTime(recordingSeconds) }}，点击停止按钮结束</span>
+      </div>
     </div>
   </div>
 </template>
@@ -357,6 +590,22 @@ async function newChat() {
   border-bottom-left-radius: 8px;
 }
 
+.message-image {
+  margin-bottom: 6px;
+}
+
+.message-image :deep(.el-image) {
+  display: block;
+}
+
+.message-voice {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+
 .message-text {
   white-space: pre-wrap;
 }
@@ -395,7 +644,56 @@ async function newChat() {
   margin-top: auto;
 }
 
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-action-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-color: var(--color-border);
+  transition: all 0.3s ease;
+}
+
+.input-action-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.input-action-btn.recording {
+  animation: recPulse 1s ease-in-out infinite;
+}
+
+@keyframes recPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 107, 61, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(198, 107, 61, 0); }
+}
+
 .chat-input {
+  flex: 1;
   --el-input-border-radius: 24px;
+}
+
+.recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-top: 6px;
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.recording-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  animation: blink 1s infinite;
 }
 </style>

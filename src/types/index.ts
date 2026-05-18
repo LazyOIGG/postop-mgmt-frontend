@@ -219,7 +219,7 @@ export interface RehabTask {
 }
 
 export interface RehabPlanGenerateRequest {
-  surgery_type: string
+  surgery_type?: string
   plan_title?: string
 }
 

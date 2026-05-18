@@ -39,7 +39,7 @@ async function submitCheckin() {
     submitted.value = true
     await fetchHistory()
   } catch {
-    // silent
+    ElMessage.error('打卡提交失败，请稍后重试')
   }
 }
 
@@ -49,7 +49,7 @@ async function fetchHistory() {
     const res = await checkinService.getRecords()
     if (res.data.success) history.value = res.data.records || []
   } catch {
-    // silent
+    ElMessage.error('加载打卡记录失败')
   } finally {
     loading.value = false
   }

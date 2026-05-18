@@ -86,7 +86,7 @@ onMounted(async () => {
     const res = await statsService.getDashboard()
     if (res.data.success) dashboard.value = res.data.data
   } catch {
-    // silent
+    ElMessage.error('加载仪表盘数据失败，请稍后重试')
   } finally {
     loading.value = false
   }

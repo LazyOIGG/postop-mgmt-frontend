@@ -114,7 +114,7 @@ onMounted(async () => {
     if (statsRes.data.success) stats.value = statsRes.data.stats
     if (dashRes.data.success) dashboard.value = dashRes.data.data
   } catch {
-    // silent
+    ElMessage.error('加载统计数据失败，请稍后重试')
   } finally {
     loading.value = false
   }

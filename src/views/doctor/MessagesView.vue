@@ -36,7 +36,7 @@ onMounted(async () => {
     const res = await doctorService.getPatients()
     if (res.data.success) patients.value = res.data.patients
   } catch {
-    // silent
+    ElMessage.error('加载患者列表失败')
   } finally {
     loadingPatients.value = false
   }
@@ -56,7 +56,7 @@ async function loadMessages() {
     const res = await doctorService.getMessages(selectedPatient.value)
     if (res.data.success) messages.value = res.data.messages
   } catch {
-    // silent
+    ElMessage.error('加载消息失败')
   } finally {
     loadingMessages.value = false
   }
@@ -73,7 +73,7 @@ async function sendMessage() {
       inputText.value = ''
     }
   } catch {
-    // silent
+    ElMessage.error('发送消息失败')
   }
 }
 
