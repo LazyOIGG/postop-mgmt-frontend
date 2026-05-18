@@ -15,8 +15,15 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function fetchMessages(sessionId: number, username?: string) {
-    const res = await sessionService.getMessages(sessionId, username)
-    if (res.data.success) messages.value = res.data.messages
+    try {
+      const res = await sessionService.getMessages(sessionId, username)
+      if (res.data.success) {
+        messages.value = res.data.messages || []
+      }
+    } catch (err) {
+      messages.value = []
+      throw err
+    }
   }
 
   async function createSession(username: string, title?: string) {

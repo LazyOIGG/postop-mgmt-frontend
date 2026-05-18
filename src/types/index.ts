@@ -38,11 +38,13 @@ export interface ChatResponse {
 
 // ===== 会话 =====
 export interface Session {
-  id: number
+  session_id: number
   username: string
-  title: string
-  created_at: string
-  updated_at: string
+  session_title: string
+  start_time: string
+  last_updated: string
+  message_count?: number
+  first_message?: string
 }
 
 export interface Message {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { chatService } from '@/services/chat'
@@ -312,15 +313,19 @@ function detectMsgType(content: string): 'text' | 'image' | 'voice' {
 }
 
 async function loadSession(sessionId: number) {
-  chatStore.setCurrentSession(sessionId)
-  await chatStore.fetchMessages(sessionId, auth.user?.username)
-  messages.value = chatStore.messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-    type: detectMsgType(m.content),
-  }))
-  showSessions.value = false
-  scrollToBottom()
+  try {
+    chatStore.setCurrentSession(sessionId)
+    await chatStore.fetchMessages(sessionId, auth.user?.username)
+    messages.value = chatStore.messages.map((m) => ({
+      role: m.role as 'user' | 'assistant' | 'system',
+      content: m.content,
+      type: detectMsgType(m.content),
+    }))
+    showSessions.value = false
+    scrollToBottom()
+  } catch (err: any) {
+    ElMessage.error('加载会话消息失败: ' + (err?.response?.data?.detail || err?.message || '未知错误'))
+  }
 }
 
 async function newChat() {
@@ -364,18 +369,18 @@ function formatTime(sec: number) {
         v-for="s in chatStore.sessions"
         :key="s.id"
         class="session-item"
-        :class="{ active: s.id === chatStore.currentSessionId }"
-        @click="loadSession(s.id)"
+        :class="{ active: s.session_id === chatStore.currentSessionId }"
+        @click="loadSession(s.session_id)"
       >
         <div class="session-info">
-          <span class="session-title">{{ s.title }}</span>
-          <span class="session-date">{{ s.updated_at?.slice(0, 10) }}</span>
+          <span class="session-title">{{ s.session_title }}</span>
+          <span class="session-date">{{ s.last_updated?.slice(0, 10) }}</span>
         </div>
         <div class="session-actions">
-          <el-button text size="small" @click.stop="renameSession(s.id)">
+          <el-button text size="small" @click.stop="renameSession(s.session_id)">
             <el-icon :size="14"><Edit /></el-icon>
           </el-button>
-          <el-button text size="small" type="danger" @click.stop="deleteSession(s.id)">
+          <el-button text size="small" type="danger" @click.stop="deleteSession(s.session_id)">
             <el-icon :size="14"><Delete /></el-icon>
           </el-button>
         </div>
