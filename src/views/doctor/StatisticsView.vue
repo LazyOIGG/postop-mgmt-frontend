@@ -60,8 +60,8 @@ const rolePieOption = computed(() => ({
     itemStyle: { borderRadius: 6, borderColor: '#F2EBDF', borderWidth: 3 },
     label: { show: false },
     data: [
-      { value: stats.value?.total_users || 0, name: '患者', itemStyle: { color: '#606C38' } },
-      { value: Math.max(1, Math.round((stats.value?.total_users || 0) * 0.1)), name: '医生', itemStyle: { color: '#C08E3A' } },
+      { value: Math.max(0, (stats.value?.total_users || 0) - (stats.value?.total_doctors || 0)), name: '患者', itemStyle: { color: '#606C38' } },
+      { value: stats.value?.total_doctors || 0, name: '医生', itemStyle: { color: '#C08E3A' } },
     ],
   }],
 }))

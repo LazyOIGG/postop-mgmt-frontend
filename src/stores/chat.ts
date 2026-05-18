@@ -36,6 +36,20 @@ export const useChatStore = defineStore('chat', () => {
     currentSessionId.value = id
   }
 
+  async function renameSession(sessionId: number, newTitle: string, username: string) {
+    await sessionService.rename(sessionId, newTitle)
+    await fetchSessions(username)
+  }
+
+  async function deleteSession(sessionId: number, username: string) {
+    await sessionService.delete(sessionId, username)
+    if (currentSessionId.value === sessionId) {
+      currentSessionId.value = null
+      messages.value = []
+    }
+    await fetchSessions(username)
+  }
+
   return {
     sessions,
     currentSessionId,
@@ -46,5 +60,7 @@ export const useChatStore = defineStore('chat', () => {
     createSession,
     addMessage,
     setCurrentSession,
+    renameSession,
+    deleteSession,
   }
 })

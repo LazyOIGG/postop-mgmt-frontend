@@ -6,7 +6,7 @@ import { chatService } from '@/services/chat'
 import { multimodalService } from '@/services/multimodal'
 import { healthService } from '@/services/health'
 import { useWebSocket } from '@/composables/useWebSocket'
-import { Plus, ChatDotRound, Picture, Microphone, VideoPause } from '@element-plus/icons-vue'
+import { Plus, ChatDotRound, Picture, Microphone, VideoPause, Edit, Delete } from '@element-plus/icons-vue'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
@@ -77,9 +77,17 @@ watch(lastMessage, (data: any) => {
   }
 })
 
+let messageAbort: AbortController | null = null
+
 async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || isStreaming.value) return
+
+  // 取消上一个未完成请求
+  if (messageAbort) {
+    messageAbort.abort()
+    messageAbort = null
+  }
 
   messages.value.push({ role: 'user', content: text, type: 'text' })
   inputText.value = ''
@@ -93,19 +101,23 @@ async function sendMessage() {
       session_id: chatStore.currentSessionId || undefined,
     })
   } else {
+    messageAbort = new AbortController()
     try {
       const res = await chatService.sendMessage({
         message: text,
         session_id: chatStore.currentSessionId || undefined,
         stream: false,
-      })
+      }, { signal: messageAbort.signal })
       if (res.data.success) {
         messages.value.push({ role: 'assistant', content: res.data.content, agent: res.data.agent })
       }
-    } catch {
-      messages.value.push({ role: 'assistant', content: '发送失败，请重试' })
+    } catch (err: any) {
+      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+        messages.value.push({ role: 'assistant', content: '发送失败，请重试' })
+      }
     } finally {
       isStreaming.value = false
+      messageAbort = null
     }
   }
 }
@@ -256,6 +268,35 @@ async function handleVoiceResult(blob: Blob) {
 
 // ── Utils ────────────────────────────────────────────────────────
 
+async function renameSession(sessionId: number) {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入新名称', '重命名会话', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputPattern: /^.{1,50}$/,
+      inputErrorMessage: '名称长度为1-50个字符',
+    })
+    if (value && auth.user?.username) {
+      await chatStore.renameSession(sessionId, value, auth.user.username)
+      ElMessage.success('重命名成功')
+    }
+  } catch {}
+}
+
+async function deleteSession(sessionId: number) {
+  try {
+    await ElMessageBox.confirm('确定要删除该会话吗？删除后不可恢复。', '删除会话', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    if (auth.user?.username) {
+      await chatStore.deleteSession(sessionId, auth.user.username)
+      ElMessage.success('会话已删除')
+    }
+  } catch {}
+}
+
 function scrollToBottom() {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -326,8 +367,18 @@ function formatTime(sec: number) {
         :class="{ active: s.id === chatStore.currentSessionId }"
         @click="loadSession(s.id)"
       >
-        <span class="session-title">{{ s.title }}</span>
-        <span class="session-date">{{ s.updated_at?.slice(0, 10) }}</span>
+        <div class="session-info">
+          <span class="session-title">{{ s.title }}</span>
+          <span class="session-date">{{ s.updated_at?.slice(0, 10) }}</span>
+        </div>
+        <div class="session-actions">
+          <el-button text size="small" @click.stop="renameSession(s.id)">
+            <el-icon :size="14"><Edit /></el-icon>
+          </el-button>
+          <el-button text size="small" type="danger" @click.stop="deleteSession(s.id)">
+            <el-icon :size="14"><Delete /></el-icon>
+          </el-button>
+        </div>
       </div>
       <div v-if="chatStore.sessions.length === 0" class="empty-state">暂无对话记录</div>
     </div>
@@ -468,10 +519,30 @@ function formatTime(sec: number) {
 .session-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.2s ease;
+}
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.session-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.session-item:hover .session-actions {
+  opacity: 1;
 }
 
 .session-item:hover, .session-item.active {

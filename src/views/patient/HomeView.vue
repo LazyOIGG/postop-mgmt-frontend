@@ -22,15 +22,16 @@ const quickActions = [
 ]
 
 const trendOption = computed(() => {
-  const checkins = (overview.value?.trend as any)?.checkins || []
-  const dates = checkins.map((c: any) => c.checkin_date?.slice(5) || '')
-  const temps = checkins.map((c: any) => c.temperature)
-  const hrs = checkins.map((c: any) => c.heart_rate)
+  const trend = (overview.value?.trend as any) || {}
+  const dates = (trend.dates || []).map((d: string) => d?.slice(5) || '')
+  const temps = trend.temperature || []
+  const hrs = trend.heart_rate || []
+  const bgs = trend.blood_sugar || []
 
   return {
     tooltip: { trigger: 'axis' },
     legend: {
-      data: ['体温 °C', '心率 bpm'],
+      data: ['体温 °C', '心率 bpm', '血糖 mmol/L'],
       bottom: 0,
       textStyle: { color: '#7A6F5F', fontSize: 11 },
     },
@@ -87,6 +88,16 @@ const trendOption = computed(() => {
             ],
           },
         },
+      },
+      {
+        name: '血糖 mmol/L',
+        type: 'line',
+        data: bgs.length > 0 ? bgs : [],
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { color: '#B08B6E', width: 2 },
+        itemStyle: { color: '#B08B6E' },
       },
     ],
   }

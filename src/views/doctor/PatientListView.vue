@@ -43,7 +43,7 @@ const pagedPatients = computed(() => {
 })
 
 function viewDetail(username: string) {
-  router.push({ name: 'DoctorMessages', query: { patient: username } })
+  router.push({ name: 'DoctorPatientDetail', params: { username } })
 }
 </script>
 

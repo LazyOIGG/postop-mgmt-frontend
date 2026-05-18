@@ -168,6 +168,7 @@ export interface ApiError {
 // ===== 系统统计 =====
 export interface SystemStats {
   total_users: number
+  total_doctors: number
   total_sessions: number
   total_messages: number
   active_today: number

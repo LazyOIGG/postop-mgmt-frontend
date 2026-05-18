@@ -2,8 +2,8 @@ import api from '@/api'
 import type { ChatRequest, ChatResponse, Session, Message } from '@/types'
 
 export const chatService = {
-  sendMessage(data: ChatRequest) {
-    return api.post<ChatResponse>('/api/v1/chat', data)
+  sendMessage(data: ChatRequest, config?: any) {
+    return api.post<ChatResponse>('/api/v1/chat', data, config)
   },
 }
 
