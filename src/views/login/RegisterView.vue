@@ -37,7 +37,7 @@ async function handleRegister() {
       confirm_password: form.value.confirm_password,
     })
     if (res.success) {
-      router.push('/login')
+      router.push(res.is_admin ? '/doctor' : '/patient')
     } else {
       error.value = res.message || '注册失败'
     }

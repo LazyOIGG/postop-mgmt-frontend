@@ -11,12 +11,26 @@ export interface RegisterRequest {
   is_admin?: boolean
 }
 
+export interface RefreshRequest {
+  refresh_token: string
+}
+
+export interface LogoutRequest {
+  refresh_token?: string
+}
+
+export interface AuthData {
+  username: string
+  is_admin: boolean
+  token: string
+  refresh_token: string
+}
+
 export interface AuthResponse {
   success: boolean
-  username?: string
-  is_admin?: boolean
-  token?: string
+  code?: number
   message?: string
+  data?: AuthData
 }
 
 // ===== 聊天 =====
