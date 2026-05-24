@@ -3,12 +3,20 @@ import { ref, computed, onMounted } from 'vue'
 import AvatarPatient from '@/components/AvatarPatient.vue'
 import AvatarDoctor from '@/components/AvatarDoctor.vue'
 import { useRoute } from 'vue-router'
+import { Picture, Microphone, VideoPause } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { doctorService } from '@/services/doctor'
 import type { Patient, DoctorMessage } from '@/types'
 
 const route = useRoute()
 const auth = useAuthStore()
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
+function mediaSrc(url: string) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return apiBase + url
+}
 
 const patients = ref<Patient[]>([])
 const messages = ref<DoctorMessage[]>([])
@@ -70,14 +78,22 @@ async function loadMessages() {
 }
 
 const sendingMsg = ref(false)
+const imageInput = ref<HTMLInputElement>()
+const uploadingMedia = ref(false)
+const isRecording = ref(false)
+const recordingSeconds = ref(0)
+let mediaRecorder: MediaRecorder | null = null
+let recordedChunks: Blob[] = []
+let recordingTimer: ReturnType<typeof setInterval> | null = null
 
-async function sendMessage() {
+async function sendMessage(messageType = 'text', mediaUrl?: string) {
   const text = inputText.value.trim()
-  if (!text || !selectedPatient.value || sendingMsg.value) return
+  if (!text && messageType === 'text') return
+  if (!selectedPatient.value || sendingMsg.value) return
 
   sendingMsg.value = true
   try {
-    await doctorService.sendMessage(selectedPatient.value, text)
+    await doctorService.sendMessage(selectedPatient.value, text || '[图片]', messageType, mediaUrl)
     inputText.value = ''
     await loadMessages()
   } catch {
@@ -85,6 +101,58 @@ async function sendMessage() {
   } finally {
     sendingMsg.value = false
   }
+}
+
+async function sendImage() { imageInput.value?.click() }
+async function onImageSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = ''
+  uploadingMedia.value = true
+  try {
+    const res = await doctorService.uploadImage(file)
+    if (res.data.success) await sendMessage('image', res.data.url)
+  } catch { ElMessage.error('图片上传失败') }
+  finally { uploadingMedia.value = false }
+}
+
+async function toggleRecording() {
+  if (isRecording.value) stopRecording()
+  else await startRecording()
+}
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+    recordedChunks = []
+    mediaRecorder.ondataavailable = (e: any) => { if (e.data.size > 0) recordedChunks.push(e.data) }
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop())
+      const blob = new Blob(recordedChunks, { type: 'audio/webm' })
+      const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
+      uploadingMedia.value = true
+      try {
+        const res = await doctorService.uploadVoice(file)
+        if (res.data.success) await sendMessage('voice', res.data.url)
+      } catch { ElMessage.error('语音上传失败') }
+      finally { uploadingMedia.value = false }
+    }
+    mediaRecorder.start()
+    isRecording.value = true
+    recordingSeconds.value = 0
+    recordingTimer = setInterval(() => { recordingSeconds.value++; if (recordingSeconds.value >= 60) stopRecording() }, 1000)
+  } catch { ElMessage.error('无法访问麦克风') }
+}
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+  isRecording.value = false
+  if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null }
+}
+function formatTime(sec: number) {
+  const m = Math.floor(sec / 60).toString().padStart(2, '0')
+  const s = (sec % 60).toString().padStart(2, '0')
+  return m + ':' + s
 }
 
 function selectPatient(username: string) {
@@ -156,8 +224,12 @@ function selectPatient(username: string) {
             >
               <AvatarPatient v-if="m.sender === 'patient'" :size="30" class="msg-avatar" />
               <div class="msg-bubble" :class="m.sender">
-                <div class="msg-content">{{ m.content }}</div>
-                <div class="msg-time">{{ m.created_at?.slice(0, 16) }}</div>
+                <el-image v-if="(m as any).message_type === 'image' && (m as any).media_url" :src="mediaSrc((m as any).media_url)" :preview-src-list="[mediaSrc((m as any).media_url)]" class="msg-image" style="max-width:200px;max-height:160px;border-radius:12px;cursor:pointer" />
+              <div v-if="(m as any).message_type === 'voice' && (m as any).media_url" class="msg-voice">
+                <audio :src="mediaSrc((m as any).media_url)" controls style="height:32px;max-width:200px" />
+              </div>
+              <div class="msg-content" v-if="(m as any).message_type !== 'image' && (m as any).message_type !== 'voice'">{{ m.content }}</div>
+              <div class="msg-time">{{ m.created_at?.slice(0, 16) }}</div>
               </div>
               <AvatarDoctor v-if="m.sender === 'doctor'" :size="30" class="msg-avatar" />
             </div>
@@ -172,11 +244,21 @@ function selectPatient(username: string) {
             />
           </div>
           <div class="chat-input-area">
+            <input ref="imageInput" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
+            <div class="input-row">
+              <el-button circle :disabled="sendingMsg || uploadingMedia" @click="sendImage" class="input-action-btn">
+                <el-icon :size="18"><Picture /></el-icon>
+              </el-button>
+              <el-button circle :type="isRecording ? 'danger' : 'default'" :disabled="sendingMsg && !isRecording" @click="toggleRecording" class="input-action-btn" :class="{ recording: isRecording }">
+                <el-icon v-if="!isRecording" :size="18"><Microphone /></el-icon>
+                <el-icon v-else :size="18"><VideoPause /></el-icon>
+              </el-button>
             <el-input
               v-model="inputText"
-              placeholder="输入消息..."
+              :placeholder="isRecording ? '录音中 '+formatTime(recordingSeconds)+'...' : '输入消息...'"
               size="large"
-              @keyup.enter="sendMessage"
+              :disabled="isRecording"
+              @keyup.enter="sendMessage('text')"
             >
               <template #suffix>
                 <el-button
@@ -190,6 +272,11 @@ function selectPatient(username: string) {
                 </el-button>
               </template>
             </el-input>
+            </div>
+            <div v-if="isRecording" class="recording-bar">
+              <div class="recording-pulse"></div>
+              <span>录音中 {{ formatTime(recordingSeconds) }}</span>
+            </div>
           </div>
         </template>
       </div>
@@ -399,4 +486,15 @@ function selectPatient(username: string) {
 .chat-input-area .el-input {
   --el-input-border-radius: 20px;
 }
+
+.msg-image { max-width: 200px; max-height: 160px; border-radius: 12px; display: block; margin-bottom: 4px; }
+.msg-voice { margin-bottom: 4px; }
+.input-row { display: flex; align-items: center; gap: 8px; }
+.input-action-btn { flex-shrink: 0; width: 40px; height: 40px; border-color: var(--color-border); transition: all 0.3s ease; }
+.input-action-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.input-action-btn.recording { animation: recPulse 1s ease-in-out infinite; }
+.recording-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; margin-top: 6px; background: var(--color-danger-bg); border-radius: var(--radius-sm); font-size: 12px; color: var(--color-danger); }
+.recording-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--color-danger); animation: blink 1s infinite; }
+@keyframes recPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(198,107,61,0.4); } 50% { box-shadow: 0 0 0 8px rgba(198,107,61,0); } }
+@keyframes blink { 0%,100% { opacity: 0.2; } 50% { opacity: 0.8; } }
 </style>

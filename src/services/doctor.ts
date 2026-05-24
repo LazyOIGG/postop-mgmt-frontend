@@ -28,11 +28,21 @@ export const doctorService = {
       { params: { patient_username: patientUsername } },
     )
   },
-  sendMessage(patientUsername: string, content: string) {
-    return api.post('/api/v1/doctor/message', { patient_username: patientUsername, content })
+  sendMessage(patientUsername: string, content: string, messageType = 'text', mediaUrl?: string) {
+    return api.post('/api/v1/doctor/message', { patient_username: patientUsername, content, message_type: messageType, media_url: mediaUrl || null })
   },
-  sendMessageFromPatient(patientUsername: string, content: string) {
-    return api.post('/api/v1/doctor/message/from-patient', { patient_username: patientUsername, content })
+  sendMessageFromPatient(patientUsername: string, content: string, messageType = 'text', mediaUrl?: string) {
+    return api.post('/api/v1/doctor/message/from-patient', { patient_username: patientUsername, content, message_type: messageType, media_url: mediaUrl || null })
+  },
+  uploadImage(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post<{ success: boolean; url: string }>('/api/v1/upload/image', formData)
+  },
+  uploadVoice(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post<{ success: boolean; url: string }>('/api/v1/upload/voice', formData)
   },
   getUnreadCount() {
     return api.get<{ success: boolean; unread_count: number }>(

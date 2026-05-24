@@ -170,8 +170,11 @@ export interface Alert {
 export interface DoctorMessage {
   id: number
   patient_username: string
+  doctor_username?: string
   sender: 'doctor' | 'patient'
   content: string
+  message_type?: 'text' | 'image' | 'voice'
+  media_url?: string
   created_at: string
 }
 
