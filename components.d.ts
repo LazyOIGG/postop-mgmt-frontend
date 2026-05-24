@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AvatarDoctor: typeof import('./src/components/AvatarDoctor.vue')['default']
     AvatarPatient: typeof import('./src/components/AvatarPatient.vue')['default']
+    ElAlert: typeof import('element-plus/es')['ElAlert']
     ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']

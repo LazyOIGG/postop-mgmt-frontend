@@ -7,7 +7,9 @@ import { chatService } from '@/services/chat'
 import { multimodalService } from '@/services/multimodal'
 import { healthService } from '@/services/health'
 import { useWebSocket } from '@/composables/useWebSocket'
-import { Plus, ChatDotRound, Picture, Microphone, VideoPause, Edit, Delete } from '@element-plus/icons-vue'
+import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
+import { Plus, ChatDotRound, Picture, Microphone, VideoPause, Edit, Delete, Headset } from '@element-plus/icons-vue'
+import { useMediaUrl } from '@/composables/useMediaUrl'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
@@ -22,11 +24,11 @@ const imageInput = ref<HTMLInputElement>()
 const uploadingImage = ref(false)
 
 // Voice recording
-const isRecording = ref(false)
-const recordingSeconds = ref(0)
-let mediaRecorder: MediaRecorder | null = null
-let recordedChunks: Blob[] = []
-let recordingTimer: ReturnType<typeof setInterval> | null = null
+const voiceRecorder = useVoiceRecorder(async (blob, seconds) => {
+  const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
+  await handleVoiceResult(file, seconds)
+})
+const { isRecording, recordingSeconds, toggleRecording, stopRecording, formatTime } = voiceRecorder
 
 interface ChatMsg {
   role: 'user' | 'assistant' | 'system'
@@ -55,7 +57,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  stopRecording()
+  voiceRecorder.stopRecording()
   disconnect()
 })
 
@@ -176,60 +178,14 @@ async function onImageSelected(e: Event) {
 
 // ── Voice recording ──────────────────────────────────────────────
 
-async function toggleRecording() {
-  if (isRecording.value) {
-    stopRecording()
-  } else {
-    await startRecording()
-  }
-}
 
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-    recordedChunks = []
 
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) recordedChunks.push(e.data)
-    }
-
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop())
-      const blob = new Blob(recordedChunks, { type: 'audio/webm' })
-      await handleVoiceResult(blob)
-    }
-
-    mediaRecorder.start()
-    isRecording.value = true
-    recordingSeconds.value = 0
-    recordingTimer = setInterval(() => {
-      recordingSeconds.value++
-      // Auto-stop at 60s
-      if (recordingSeconds.value >= 60) stopRecording()
-    }, 1000)
-  } catch {
-    ElMessage.error('无法访问麦克风，请检查权限设置')
-  }
-}
-
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop()
-  }
-  isRecording.value = false
-  if (recordingTimer) {
-    clearInterval(recordingTimer)
-    recordingTimer = null
-  }
-}
-
-async function handleVoiceResult(blob: Blob) {
+async function handleVoiceResult(blob: Blob, seconds = 0) {
   const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
 
   messages.value.push({
     role: 'user',
-    content: `[语音 ${recordingSeconds.value}"] 正在识别...`,
+    content: `[语音 ${seconds}"] 正在识别...`,
     type: 'voice',
   })
   isStreaming.value = true
@@ -336,11 +292,27 @@ async function newChat() {
   await chatStore.createSession(auth.user.username)
 }
 
-function formatTime(sec: number) {
-  const m = Math.floor(sec / 60).toString().padStart(2, '0')
-  const s = (sec % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
+const speakingIndex = ref(-1)
+const { mediaSrc } = useMediaUrl()
+
+async function playTTS(text: string, index: number) {
+  if (speakingIndex.value === index) {
+    speakingIndex.value = -1
+    return
+  }
+  try {
+    speakingIndex.value = index
+    const res = await multimodalService.speechTTS(text)
+    const url = URL.createObjectURL(res.data as Blob)
+    const audio = new Audio(url)
+    audio.onended = () => { speakingIndex.value = -1 }
+    audio.play()
+    setTimeout(() => speakingIndex.value === index && (speakingIndex.value = -1), 60000)
+  } catch {
+    speakingIndex.value = -1
+  }
 }
+
 </script>
 
 <template>
@@ -422,6 +394,16 @@ function formatTime(sec: number) {
             <el-icon :size="16"><Microphone /></el-icon>
           </div>
           <div class="message-text">{{ msg.content }}</div>
+          <el-button
+            v-if="msg.role === 'assistant' && msg.type !== 'image'"
+            text
+            size="small"
+            class="tts-btn"
+            :class="{ playing: speakingIndex === i }"
+            @click="playTTS(msg.content, i)"
+          >
+            <el-icon :size="14"><Headset /></el-icon>
+          </el-button>
           <div v-if="msg.agent" class="message-meta">{{ msg.agent }}</div>
         </div>
       </div>
@@ -691,6 +673,15 @@ function formatTime(sec: number) {
   opacity: 0.6;
   margin-top: 4px;
 }
+
+.tts-btn {
+  margin-top: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.tts-btn:hover { opacity: 1; }
+.tts-btn.playing { opacity: 1; color: var(--color-primary); animation: ttsPulse 1s ease-in-out infinite; }
+@keyframes ttsPulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
 .typing-dot {
   display: flex;

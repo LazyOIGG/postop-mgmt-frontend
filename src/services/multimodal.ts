@@ -18,4 +18,7 @@ export const multimodalService = {
     formData.append('file', file)
     return api.post('/api/v1/multimodal/speech/stt', formData)
   },
+  speechTTS(text: string, voice = 'zh_female') {
+    return api.post('/api/v1/multimodal/speech/tts', { text, voice }, { responseType: 'blob' })
+  },
 }

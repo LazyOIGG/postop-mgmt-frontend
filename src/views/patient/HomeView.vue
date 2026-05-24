@@ -103,10 +103,12 @@ const trendOption = computed(() => {
   }
 })
 
-onMounted(async () => {
+const trendDays = ref(7)
+
+async function loadDashboard() {
   try {
     const [oRes, rRes] = await Promise.all([
-      overviewService.getDashboard(7),
+      overviewService.getDashboard(trendDays.value),
       reminderService.getList(),
     ])
     if (oRes.data.success) overview.value = oRes.data.data
@@ -119,7 +121,14 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+function changeDays(days: number) {
+  trendDays.value = days
+  loadDashboard()
+}
+
+onMounted(() => { loadDashboard() })
 </script>
 
 <template>
@@ -170,7 +179,14 @@ onMounted(async () => {
     </section>
 
     <section class="trend-section glass-card stagger-item stagger-4">
-      <h3>健康趋势（近7天）</h3>
+      <div class="trend-head">
+        <h3>健康趋势（近{{ trendDays }}天）</h3>
+        <el-radio-group v-model="trendDays" size="small" @change="changeDays">
+          <el-radio-button :value="7">7天</el-radio-button>
+          <el-radio-button :value="14">14天</el-radio-button>
+          <el-radio-button :value="30">30天</el-radio-button>
+        </el-radio-group>
+      </div>
       <v-chart class="trend-chart" :option="trendOption" autoresize />
     </section>
   </div>
@@ -315,7 +331,16 @@ onMounted(async () => {
 
 .trend-section h3 {
   font-size: 18px;
+  margin-bottom: 0;
+}
+
+.trend-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .trend-chart {

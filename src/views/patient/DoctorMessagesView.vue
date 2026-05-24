@@ -5,17 +5,13 @@ import { doctorService, notificationService } from '@/services/doctor'
 import type { DoctorMessage } from '@/types'
 import { ElMessage } from 'element-plus'
 import { ChatDotRound, Picture, Microphone, VideoPause } from '@element-plus/icons-vue'
+import { useVoiceRecorder } from '@/composables/useVoiceRecorder'
+import { useMediaUrl } from '@/composables/useMediaUrl'
 import AvatarPatient from '@/components/AvatarPatient.vue'
 import AvatarDoctor from '@/components/AvatarDoctor.vue'
 
 const auth = useAuthStore()
-const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-
-function mediaSrc(url: string) {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return apiBase + url
-}
+const { mediaSrc } = useMediaUrl()
 
 const messages = ref<DoctorMessage[]>([])
 const inputText = ref('')
@@ -23,11 +19,16 @@ const loading = ref(false)
 const sending = ref(false)
 const imageInput = ref<HTMLInputElement>()
 const uploadingMedia = ref(false)
-const isRecording = ref(false)
-const recordingSeconds = ref(0)
-let mediaRecorder: MediaRecorder | null = null
-let recordedChunks: Blob[] = []
-let recordingTimer: ReturnType<typeof setInterval> | null = null
+const voiceRecorder = useVoiceRecorder(async (blob) => {
+  const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
+  uploadingMedia.value = true
+  try {
+    const res = await doctorService.uploadVoice(file)
+    if (res.data.success) await sendMessage('voice', res.data.url)
+  } catch { ElMessage.error('语音上传失败') }
+  finally { uploadingMedia.value = false }
+})
+const { isRecording, recordingSeconds, toggleRecording, stopRecording, formatTime } = voiceRecorder
 const messagesContainer = ref<HTMLElement>()
 
 const username = auth.user?.username || ''
@@ -82,43 +83,7 @@ async function onImageSelected(e: Event) {
   finally { uploadingMedia.value = false }
 }
 
-async function toggleRecording() {
-  if (isRecording.value) stopRecording()
-  else await startRecording()
-}
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-    recordedChunks = []
-    mediaRecorder.ondataavailable = (e: any) => { if (e.data.size > 0) recordedChunks.push(e.data) }
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop())
-      const blob = new Blob(recordedChunks, { type: 'audio/webm' })
-      const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
-      uploadingMedia.value = true
-      try {
-        const res = await doctorService.uploadVoice(file)
-        if (res.data.success) await sendMessage('voice', res.data.url)
-      } catch { ElMessage.error('语音上传失败') }
-      finally { uploadingMedia.value = false }
-    }
-    mediaRecorder.start()
-    isRecording.value = true
-    recordingSeconds.value = 0
-    recordingTimer = setInterval(() => { recordingSeconds.value++; if (recordingSeconds.value >= 60) stopRecording() }, 1000)
-  } catch { ElMessage.error('无法访问麦克风') }
-}
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop()
-  isRecording.value = false
-  if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null }
-}
-function formatTime(sec: number) {
-  const m = Math.floor(sec / 60).toString().padStart(2, '0')
-  const s = (sec % 60).toString().padStart(2, '0')
-  return m + ':' + s
-}
+
 
 function scrollToBottom() {
   nextTick(() => {

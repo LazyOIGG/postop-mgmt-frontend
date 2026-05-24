@@ -154,7 +154,6 @@ export interface Patient {
   real_name?: string
   risk_level?: string
   last_checkin?: string
-  [key: string]: unknown
 }
 
 export interface Alert {
@@ -164,7 +163,6 @@ export interface Alert {
   message: string
   status: 'pending' | 'processed'
   created_at: string
-  [key: string]: unknown
 }
 
 export interface DoctorMessage {
@@ -206,19 +204,27 @@ export interface SystemStats {
 }
 
 export interface DashboardData {
-  basic_stats: Record<string, unknown>
-  ratio_stats: Record<string, unknown>
-  recent_high_risk: unknown[]
-  recent_abnormal_checkins: unknown[]
+  basic_stats: { total_users?: number; total_sessions?: number; active_today?: number }
+  ratio_stats: Record<string, number>
+  recent_high_risk: Array<{ patient_username?: string; risk_reasons?: string[] }>
+  recent_abnormal_checkins: Array<{ username?: string; checkin_date?: string }>
 }
 
 // ===== 趋势 =====
+export interface TrendData {
+  dates: string[]
+  temperature: number[]
+  blood_sugar: number[]
+  heart_rate: number[]
+  abnormal_flags: number[]
+}
+
 export interface OverviewData {
   overview: Record<string, unknown>
-  trend: Record<string, unknown>
-  abnormal_records: unknown[]
-  latest_assessment: Record<string, unknown> | null
-  profile: Record<string, unknown> | null
+  trend: TrendData
+  abnormal_records: Array<{ date: string; reason: string; symptoms: string }>
+  latest_assessment: { risk_level?: string; advice?: string; created_at?: string } | null
+  profile: PatientProfile | null
 }
 
 // ===== 康复计划 =====

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { isHighRisk } from '@/utils/riskLevel'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { healthService } from '@/services/health'
@@ -93,6 +94,11 @@ function logout() {
         <el-descriptions-item label="体重">{{ profile.weight ? profile.weight + ' kg' : '未设置' }}</el-descriptions-item>
         <el-descriptions-item label="血型">{{ profile.blood_type || '未设置' }}</el-descriptions-item>
         <el-descriptions-item label="电话">{{ profile.phone || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="紧急联系人">{{ profile.emergency_contact || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="紧急联系电话">{{ profile.emergency_phone || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="病史" :span="2">{{ profile.medical_history || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="过敏史" :span="2">{{ profile.allergy_history || '未设置' }}</el-descriptions-item>
+        <el-descriptions-item label="当前用药" :span="2">{{ profile.current_medications || '未设置' }}</el-descriptions-item>
       </el-descriptions>
     </div>
 
@@ -129,6 +135,21 @@ function logout() {
           <el-form-item label="电话">
             <el-input v-model="editForm.phone" />
           </el-form-item>
+          <el-form-item label="紧急联系人">
+            <el-input v-model="editForm.emergency_contact" />
+          </el-form-item>
+          <el-form-item label="紧急联系电话">
+            <el-input v-model="editForm.emergency_phone" />
+          </el-form-item>
+          <el-form-item label="病史" :span="2">
+            <el-input v-model="editForm.medical_history" type="textarea" :rows="2" />
+          </el-form-item>
+          <el-form-item label="过敏史" :span="2">
+            <el-input v-model="editForm.allergy_history" type="textarea" :rows="2" />
+          </el-form-item>
+          <el-form-item label="当前用药" :span="2">
+            <el-input v-model="editForm.current_medications" type="textarea" :rows="2" />
+          </el-form-item>
         </div>
         <div class="edit-actions">
           <el-button type="primary" size="large" @click="saveProfile">保存</el-button>
@@ -150,7 +171,7 @@ function logout() {
           <template #title>
             <div class="collapse-title">
               <el-tag
-                :type="a.risk_level === '高风险' || a.risk_level === 'high' ? 'danger' : a.risk_level === '中风险' || a.risk_level === 'medium' ? 'warning' : 'success'"
+                :type="isHighRisk(a.risk_level) ? 'danger' : a.risk_level === '中风险' || a.risk_level === 'medium' ? 'warning' : 'success'"
                 size="small"
                 round
                 effect="dark"

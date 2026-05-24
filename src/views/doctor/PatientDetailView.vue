@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { isHighRisk } from '@/utils/riskLevel'
 import AvatarPatient from '@/components/AvatarPatient.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { doctorService } from '@/services/doctor'
@@ -49,11 +50,11 @@ function goToMessages() {
             <span v-if="detail.profile?.blood_type">{{ detail.profile.blood_type }}</span>
           </div>
           <el-tag
-            :type="detail.latest_assessment?.risk_level === 'high' || detail.latest_assessment?.risk_level === 'high_risk' || detail.latest_assessment?.risk_level === 'high' ? 'danger' : 'success'"
+            :type="isHighRisk(detail.latest_assessment?.risk_level) ? 'danger' : 'success'"
             size="small"
             round
           >
-            {{ detail.latest_assessment?.risk_level === 'high' || detail.latest_assessment?.risk_level === 'high_risk' || detail.latest_assessment?.risk_level === 'high' ? '高风险' : '低风险' }}
+            {{ isHighRisk(detail.latest_assessment?.risk_level) ? '高风险' : '低风险' }}
           </el-tag>
         </div>
         <el-button type="primary" @click="goToMessages">
@@ -101,11 +102,11 @@ function goToMessages() {
             <div class="info-row">
               <span class="info-label">风险等级</span>
               <el-tag
-                :type="detail.latest_assessment.risk_level === 'high' || detail.latest_assessment.risk_level === 'high_risk' ? 'danger' : 'success'"
+                :type="isHighRisk(detail.latest_assessment.risk_level) ? 'danger' : 'success'"
                 size="small"
                 round
               >
-                {{ detail.latest_assessment.risk_level === 'high' || detail.latest_assessment.risk_level === 'high_risk' ? '高风险' : '低风险' }}
+                {{ isHighRisk(detail.latest_assessment.risk_level) ? '高风险' : '低风险' }}
               </el-tag>
             </div>
             <div class="info-row" v-if="detail.latest_assessment.advice">

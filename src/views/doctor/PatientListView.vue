@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { isHighRisk } from '@/utils/riskLevel'
 import { useRouter } from 'vue-router'
 import { doctorService } from '@/services/doctor'
 import type { Patient } from '@/types'
@@ -12,7 +13,6 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-import { onMounted } from 'vue'
 onMounted(() => fetchPatients())
 
 async function fetchPatients() {
@@ -84,7 +84,7 @@ function viewDetail(username: string) {
           <el-table-column label="风险等级" width="110">
             <template #default="{ row }">
               <el-tag
-                :type="row.risk_level === '高风险' || row.risk_level === 'high' ? 'danger' : 'success'"
+                :type="isHighRisk(row.risk_level) ? 'danger' : 'success'"
                 size="small"
                 round
               >
