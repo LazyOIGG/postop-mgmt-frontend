@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useDoctorStore } from '@/stores/doctor'
+import { notificationService } from '@/services/doctor'
+import AvatarDoctor from '@/components/AvatarDoctor.vue'
 import {
   DataBoard, UserFilled, WarningFilled, ChatDotRound, TrendCharts,
   ArrowLeft, ArrowRight,
@@ -12,6 +14,16 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const doctorStore = useDoctorStore()
+let doctorPollTimer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  doctorStore.fetchMessageUnreadCount()
+  doctorPollTimer = setInterval(() => doctorStore.fetchMessageUnreadCount(), 5000)
+})
+
+onUnmounted(() => {
+  if (doctorPollTimer) clearInterval(doctorPollTimer)
+})
 
 const collapsed = ref(false)
 
@@ -26,6 +38,13 @@ const navItems = [
 function isActive(name: string) {
   return route.name === name
 }
+
+watch(() => route.name, (newName) => {
+  if (newName === 'DoctorMessages') {
+    notificationService.markAllRead().catch(() => {})
+    doctorStore.fetchMessageUnreadCount()
+  }
+})
 
 function logout() {
   auth.logout()
@@ -67,6 +86,14 @@ function logout() {
             >
               <el-icon :size="18"><component :is="item.icon" /></el-icon>
             </el-badge>
+            <el-badge
+              v-else-if="item.name === 'DoctorMessages' && doctorStore.messageUnreadCount > 0"
+              :value="doctorStore.messageUnreadCount"
+              :max="99"
+              class="nav-icon-badge"
+            >
+              <el-icon :size="18"><component :is="item.icon" /></el-icon>
+            </el-badge>
             <el-icon v-else :size="18"><component :is="item.icon" /></el-icon>
             <span v-if="!collapsed" class="nav-label">{{ item.label }}</span>
           </div>
@@ -81,7 +108,7 @@ function logout() {
           </el-icon>
         </button>
         <div v-if="!collapsed" class="user-info">
-          <div class="user-avatar">Dr</div>
+          <AvatarDoctor :size="32" />
           <div class="user-meta">
             <span class="user-name">{{ auth.user?.username }}</span>
             <button class="logout-link" @click="logout">退出登录</button>

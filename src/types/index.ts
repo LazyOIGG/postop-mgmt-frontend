@@ -175,6 +175,18 @@ export interface DoctorMessage {
   created_at: string
 }
 
+// ===== 通知 =====
+export interface Notification {
+  id: number
+  username: string
+  type: string
+  title: string
+  content: string
+  related_id: number | null
+  is_read: boolean
+  created_at: string
+}
+
 // ===== 通用 =====
 export interface ApiError {
   success: false

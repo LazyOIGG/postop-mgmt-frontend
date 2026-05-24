@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Background circle -->
+  <circle cx="60" cy="60" r="60" fill="#606C38" opacity="0.1"/>
+  <!-- Body / white coat -->
+  <path d="M35 90V75c0-13.8 11.2-25 25-25s25 11.2 25 25v15H35z" fill="#606C38"/>
+  <!-- Coat lapels -->
+  <path d="M50 55L60 68L70 55" stroke="#4A552C" stroke-width="2" fill="none"/>
+  <!-- Head -->
+  <circle cx="60" cy="40" r="16" fill="#C08E3A" opacity="0.3"/>
+  <circle cx="60" cy="40" r="16" fill="none" stroke="#606C38" stroke-width="2"/>
+  <!-- Hair -->
+  <path d="M44 37c0-8.8 7.2-10 16-10s16 1.2 16 10" fill="#4A552C"/>
+  <!-- Eyes -->
+  <circle cx="54" cy="40" r="2" fill="#606C38"/>
+  <circle cx="66" cy="40" r="2" fill="#606C38"/>
+  <!-- Smile -->
+  <path d="M54 46c2 2 10 2 12 0" stroke="#606C38" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Stethoscope -->
+  <path d="M60 68v8c0 4-4 8-8 8h-2" stroke="#C66B3D" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="48" cy="85" r="4" stroke="#C66B3D" stroke-width="2"/>
+  <!-- Cross badge -->
+  <rect x="75" y="58" width="8" height="14" rx="2" fill="#F2EBDF"/>
+  <rect x="72" y="61" width="14" height="8" rx="2" fill="#F2EBDF"/>
+  <!-- Name tag -->
+  <rect x="68" y="50" width="22" height="10" rx="3" fill="white" stroke="#E0D6C8" stroke-width="0.5"/>
+  <line x1="71" y1="54" x2="87" y2="54" stroke="#D4C9B8" stroke-width="0.5"/>
+  <line x1="71" y1="56" x2="83" y2="56" stroke="#D4C9B8" stroke-width="0.5"/>
+</svg>

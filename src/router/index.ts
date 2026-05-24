@@ -50,6 +50,11 @@ const router = createRouter({
           name: 'PatientRehab',
           component: () => import('@/views/patient/RehabPlanView.vue'),
         },
+        {
+          path: 'messages',
+          name: 'PatientMessages',
+          component: () => import('@/views/patient/DoctorMessagesView.vue'),
+        },
       ],
     },
     {

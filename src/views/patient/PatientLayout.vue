@@ -1,17 +1,39 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { HomeFilled, ChatDotRound, Document, User, Aim } from '@element-plus/icons-vue'
+import { notificationService } from '@/services/doctor'
+import AvatarPatient from '@/components/AvatarPatient.vue'
+import { HomeFilled, ChatDotRound, Document, User, Aim, Comment } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const unreadCount = ref(0)
+let unreadTimer: ReturnType<typeof setInterval> | null = null
+
+async function refreshUnread() {
+  try {
+    const res = await notificationService.getUnreadCount()
+    if (res.data.success) unreadCount.value = res.data.count
+  } catch {}
+}
+
+onMounted(() => {
+  refreshUnread()
+  unreadTimer = setInterval(refreshUnread, 5000)
+})
+
+onUnmounted(() => {
+  if (unreadTimer) clearInterval(unreadTimer)
+})
 
 const tabs = [
   { name: 'PatientHome', label: '首页', icon: HomeFilled, path: '/patient/home' },
   { name: 'PatientChat', label: 'AI助手', icon: ChatDotRound, path: '/patient/chat' },
   { name: 'PatientCheckin', label: '打卡', icon: Document, path: '/patient/checkin' },
   { name: 'PatientRehab', label: '康复', icon: Aim, path: '/patient/rehab' },
+  { name: 'PatientMessages', label: '消息', icon: Comment, path: '/patient/messages', badge: true },
   { name: 'PatientProfile', label: '我的', icon: User, path: '/patient/profile' },
 ]
 
@@ -35,7 +57,10 @@ function isActive(tabName: string) {
           </svg>
           <h2 class="app-name">患者全周期</h2>
         </div>
-        <span class="user-tag">{{ auth.user?.username }}</span>
+        <span class="user-tag">
+            <AvatarPatient :size="20" />
+            {{ auth.user?.username }}
+          </span>
       </div>
     </header>
 
@@ -58,7 +83,10 @@ function isActive(tabName: string) {
         <div class="tab-icon-wrap">
           <el-icon :size="20"><component :is="tab.icon" /></el-icon>
         </div>
-        <span class="tab-label">{{ tab.label }}</span>
+        <span class="tab-label">
+          {{ tab.label }}
+          <sup v-if="tab.badge && unreadCount > 0" class="tab-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</sup>
+        </span>
         <div v-if="isActive(tab.name)" class="tab-indicator"></div>
       </div>
     </nav>
@@ -112,10 +140,13 @@ function isActive(tabName: string) {
 }
 
 .user-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--color-text-secondary);
   background: var(--color-surface);
-  padding: 5px 14px;
+  padding: 4px 14px 4px 6px;
   border-radius: 20px;
   border: 1px solid var(--color-border-light);
 }
@@ -178,6 +209,25 @@ function isActive(tabName: string) {
   font-weight: 500;
 }
 
+.tab-badge {
+  position: absolute;
+  top: -4px;
+  right: -14px;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tab-label {
+  position: relative;
+}
 .tab-indicator {
   position: absolute;
   top: -1px;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import AvatarPatient from '@/components/AvatarPatient.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { doctorService } from '@/services/doctor'
 import { User, ChatDotRound, ArrowLeft } from '@element-plus/icons-vue'
@@ -39,9 +40,7 @@ function goToMessages() {
 
     <template v-if="detail">
       <div class="profile-card glass-card stagger-item stagger-1">
-        <div class="profile-avatar">
-          {{ (detail.profile?.real_name || username)[0] }}
-        </div>
+        <AvatarPatient :size="56" />
         <div class="profile-info">
           <h3>{{ detail.profile?.real_name || username }}</h3>
           <div class="profile-meta">

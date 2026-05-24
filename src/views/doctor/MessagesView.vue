@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import AvatarPatient from '@/components/AvatarPatient.vue'
+import AvatarDoctor from '@/components/AvatarDoctor.vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { doctorService } from '@/services/doctor'
@@ -54,7 +56,12 @@ async function loadMessages() {
   loadingMessages.value = true
   try {
     const res = await doctorService.getMessages(selectedPatient.value)
-    if (res.data.success) messages.value = res.data.messages
+    if (res.data.success) {
+      messages.value = (res.data.messages || []).reverse().map((m: any) => ({
+        ...m,
+        sender: m.doctor_username === selectedPatient.value ? 'patient' : 'doctor',
+      }))
+    }
   } catch {
     ElMessage.error('加载消息失败')
   } finally {
@@ -62,18 +69,21 @@ async function loadMessages() {
   }
 }
 
+const sendingMsg = ref(false)
+
 async function sendMessage() {
   const text = inputText.value.trim()
-  if (!text || !selectedPatient.value) return
+  if (!text || !selectedPatient.value || sendingMsg.value) return
 
+  sendingMsg.value = true
   try {
-    const res = await doctorService.sendMessage(selectedPatient.value, text)
-    if (res.data.success) {
-      messages.value.push(res.data.message as DoctorMessage)
-      inputText.value = ''
-    }
+    await doctorService.sendMessage(selectedPatient.value, text)
+    inputText.value = ''
+    await loadMessages()
   } catch {
     ElMessage.error('发送消息失败')
+  } finally {
+    sendingMsg.value = false
   }
 }
 
@@ -132,7 +142,7 @@ function selectPatient(username: string) {
         <template v-else>
           <div class="chat-header">
             <div class="chat-patient-info">
-              <div class="chat-avatar">{{ selectedPatientName[0] }}</div>
+              <AvatarPatient :size="32" />
               <span class="chat-patient-name">{{ selectedPatientName }}</span>
             </div>
           </div>
@@ -141,11 +151,15 @@ function selectPatient(username: string) {
             <div
               v-for="m in pagedMessages"
               :key="m.id"
-              class="msg-bubble"
+              class="msg-row"
               :class="m.sender"
             >
-              <div class="msg-content">{{ m.content }}</div>
-              <div class="msg-time">{{ m.created_at?.slice(0, 16) }}</div>
+              <AvatarPatient v-if="m.sender === 'patient'" :size="30" class="msg-avatar" />
+              <div class="msg-bubble" :class="m.sender">
+                <div class="msg-content">{{ m.content }}</div>
+                <div class="msg-time">{{ m.created_at?.slice(0, 16) }}</div>
+              </div>
+              <AvatarDoctor v-if="m.sender === 'doctor'" :size="30" class="msg-avatar" />
             </div>
           </div>
           <div v-if="messages.length > msgPageSize" class="msg-pagination">
@@ -338,6 +352,25 @@ function selectPatient(username: string) {
 
 .msg-content {
   white-space: pre-wrap;
+}
+
+.msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.msg-row.doctor {
+  justify-content: flex-end;
+}
+
+.msg-row.patient {
+  justify-content: flex-start;
+}
+
+.msg-avatar {
+  flex-shrink: 0;
+  margin-bottom: 2px;
 }
 
 .msg-time {

@@ -1,5 +1,5 @@
 import api from '@/api'
-import type { Patient, Alert, DoctorMessage, DashboardData, SystemStats } from '@/types'
+import type { Patient, Alert, DoctorMessage, DashboardData, SystemStats, Notification } from '@/types'
 
 export const doctorService = {
   getPatients() {
@@ -31,10 +31,31 @@ export const doctorService = {
   sendMessage(patientUsername: string, content: string) {
     return api.post('/api/v1/doctor/message', { patient_username: patientUsername, content })
   },
+  sendMessageFromPatient(patientUsername: string, content: string) {
+    return api.post('/api/v1/doctor/message/from-patient', { patient_username: patientUsername, content })
+  },
   getUnreadCount() {
     return api.get<{ success: boolean; unread_count: number }>(
       '/api/v1/doctor/notifications/unread',
     )
+  },
+}
+
+export const notificationService = {
+  getUnreadCount() {
+    return api.get<{ success: boolean; count: number }>('/api/v1/notifications/unread-count')
+  },
+  getList(unreadOnly = false) {
+    return api.get<{ success: boolean; notifications: Notification[]; count: number }>(
+      '/api/v1/notifications',
+      { params: { unread_only: unreadOnly } },
+    )
+  },
+  markRead(notificationId: number) {
+    return api.put(`/api/v1/notifications/${notificationId}/read`)
+  },
+  markAllRead() {
+    return api.put('/api/v1/notifications/read-all')
   },
 }
 
