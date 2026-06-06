@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AchievementPopup: typeof import('./src/components/rehab/AchievementPopup.vue')['default']
     AvatarDoctor: typeof import('./src/components/AvatarDoctor.vue')['default']
     AvatarPatient: typeof import('./src/components/AvatarPatient.vue')['default']
     ElBadge: typeof import('element-plus/es')['ElBadge']
@@ -21,6 +22,7 @@ declare module 'vue' {
     ElCollapseItem: typeof import('element-plus/es')['ElCollapseItem']
     ElDescriptions: typeof import('element-plus/es')['ElDescriptions']
     ElDescriptionsItem: typeof import('element-plus/es')['ElDescriptionsItem']
+    ElDialog: typeof import('element-plus/es')['ElDialog']
     ElEmpty: typeof import('element-plus/es')['ElEmpty']
     ElForm: typeof import('element-plus/es')['ElForm']
     ElFormItem: typeof import('element-plus/es')['ElFormItem']
@@ -44,6 +46,8 @@ declare module 'vue' {
     ElTimeline: typeof import('element-plus/es')['ElTimeline']
     ElTimelineItem: typeof import('element-plus/es')['ElTimelineItem']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
+    ExercisePlayer: typeof import('./src/components/rehab/ExercisePlayer.vue')['default']
+    PhaseTimeline: typeof import('./src/components/rehab/PhaseTimeline.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

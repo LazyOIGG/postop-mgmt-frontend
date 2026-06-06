@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRehabStore } from '@/stores/rehab'
+import ExercisePlayer from '@/components/rehab/ExercisePlayer.vue'
+import type { RehabExercise } from '@/types'
 
 const store = useRehabStore()
 const activePhase = ref('')
 const activeCategory = ref('')
 const searchQuery = ref('')
+const selectedExercise = ref<RehabExercise | null>(null)
 
 const categories = ['stretching', 'strength', 'balance', 'mobility', 'breathing']
 const catLabels: Record<string, string> = { stretching: '拉伸', strength: '力量', balance: '平衡', mobility: '活动度', breathing: '呼吸' }
@@ -51,7 +54,7 @@ onMounted(async () => {
     <section v-if="store.recommendedExercises.length > 0">
       <h4>📌 AI 推荐</h4>
       <div class="exercise-grid">
-        <div v-for="ex in store.recommendedExercises" :key="'rec-'+ex.id" class="ex-card">
+        <div v-for="ex in store.recommendedExercises" :key="'rec-'+ex.id" class="ex-card" @click="selectedExercise = ex">
           <div class="ex-card-header">
             <span class="ex-diff">{{ diffLabels[ex.difficulty] }}</span>
             <span class="ex-cat-tag">{{ catLabels[ex.category] }}</span>
@@ -70,7 +73,7 @@ onMounted(async () => {
     <section>
       <h4>全部运动 ({{ store.exercises.length }})</h4>
       <div class="exercise-grid">
-        <div v-for="ex in store.exercises" :key="ex.id" class="ex-card">
+        <div v-for="ex in store.exercises" :key="ex.id" class="ex-card" @click="selectedExercise = ex">
           <div class="ex-card-header">
             <span class="ex-diff">{{ diffLabels[ex.difficulty] }}</span>
             <span class="ex-cat-tag">{{ catLabels[ex.category] }}</span>
@@ -85,6 +88,13 @@ onMounted(async () => {
         </div>
       </div>
     </section>
+
+    <!-- Exercise detail dialog -->
+    <ExercisePlayer
+      v-if="selectedExercise"
+      :exercise="selectedExercise"
+      @close="selectedExercise = null"
+    />
   </div>
 </template>
 

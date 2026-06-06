@@ -57,10 +57,15 @@ function goToMessages() {
             {{ isHighRisk(detail.latest_assessment?.risk_level) ? '高风险' : '低风险' }}
           </el-tag>
         </div>
-        <el-button type="primary" @click="goToMessages">
-          <el-icon><ChatDotRound /></el-icon>
-          发送消息
-        </el-button>
+        <div class="profile-actions">
+          <el-button type="primary" @click="goToMessages">
+            <el-icon><ChatDotRound /></el-icon>
+            发送消息
+          </el-button>
+          <el-button @click="router.push({ name: 'DoctorPatientRehab', params: { username } })">
+            查看康复
+          </el-button>
+        </div>
       </div>
 
       <div class="detail-grid stagger-item stagger-2">

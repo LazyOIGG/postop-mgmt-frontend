@@ -1,15 +1,28 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRehabStore } from '@/stores/rehab'
 import { rehabPlanService } from '@/services/rehabPlan'
 import { ElMessage } from 'element-plus'
 import { FirstAidKit } from '@element-plus/icons-vue'
+import AchievementPopup from '@/components/rehab/AchievementPopup.vue'
 
 const store = useRehabStore()
 const showGenerate = ref(false)
 const generating = ref(false)
 const surgeryType = ref('')
 const planTitle = ref('')
+const popupAchievements = ref<any[]>([])
+
+watch(() => store.newAchievements, (val) => {
+  if (val && val.length > 0) {
+    popupAchievements.value = [...val]
+  }
+}, { deep: true })
+
+function onAchievementDismissed() {
+  popupAchievements.value = []
+  store.clearNewAchievements()
+}
 
 const surgeryOptions = [
   '阑尾切除术', '膝关节置换术', '髋关节置换术', '心脏搭桥术',
@@ -156,6 +169,13 @@ onMounted(() => loadPlan())
         <el-button plain round @click="$router.push('/patient/rehab/journal')">写日志</el-button>
       </section>
     </template>
+
+    <!-- Achievement popup -->
+    <AchievementPopup
+      v-if="popupAchievements.length > 0"
+      :achievements="popupAchievements"
+      @dismissed="onAchievementDismissed"
+    />
   </div>
 </template>
 
