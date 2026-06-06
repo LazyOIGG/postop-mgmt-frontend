@@ -273,3 +273,123 @@ export interface GeneratePlanResponse {
   generated_plan?: Record<string, unknown>
   error?: string
 }
+
+// ===== 康复指标 =====
+export interface RehabMetricInput {
+  metric_date: string
+  metric_type: string
+  metric_value: number
+  metric_unit?: string
+  note?: string
+}
+
+export interface RehabMetric {
+  id: number
+  plan_id: number
+  metric_date: string
+  metric_type: string
+  metric_value: number
+  metric_unit: string
+  note: string
+  created_at: string
+}
+
+export interface MetricTrend {
+  dates: string[]
+  values: number[]
+  metric_type: string
+}
+
+export interface LatestMetrics {
+  [key: string]: { value: number; unit: string; date: string }
+}
+
+// ===== 运动指导 =====
+export interface RehabExercise {
+  id: number
+  title: string
+  category: 'stretching' | 'strength' | 'balance' | 'mobility' | 'breathing' | 'other'
+  difficulty: 'easy' | 'medium' | 'hard'
+  target_body_part: string
+  surgery_type_tag: string
+  video_url: string
+  thumbnail_url: string
+  image_urls: string[]
+  description: string
+  steps: string[]
+  duration_minutes: number
+  repetitions: number
+  precautions: string
+  phase_suitable: string
+}
+
+// ===== 康复日志 =====
+export interface RehabJournalInput {
+  journal_date: string
+  mood?: string
+  pain_level?: number
+  content?: string
+  photo_urls?: string[]
+  voice_url?: string
+  sleep_quality?: number
+  appetite?: number
+  energy_level?: number
+  questions_for_doctor?: string
+}
+
+export interface RehabJournal {
+  id: number
+  plan_id: number
+  username: string
+  journal_date: string
+  mood: string
+  pain_level: number
+  content: string
+  photo_urls: string[]
+  voice_url: string
+  sleep_quality: number
+  appetite: number
+  energy_level: number
+  questions_for_doctor: string
+  created_at: string
+}
+
+// ===== 成就 =====
+export interface AchievementDef {
+  id: number
+  code: string
+  name: string
+  description: string
+  icon_url: string
+  category: 'streak' | 'milestone' | 'compliance' | 'recovery' | 'special'
+  condition_json: Record<string, unknown>
+  points: number
+}
+
+export interface UserAchievement extends AchievementDef {
+  user_achievement_id: number
+  earned_at: string
+}
+
+// ===== 仪表盘 =====
+export interface DashboardData {
+  plan: RehabPlan
+  stats: { total_tasks: number; completed_tasks: number; pending_tasks: number }
+  calendar: Record<string, { total: number; completed: number; skipped: number }>
+  today_tasks: RehabTask[]
+  latest_metrics: LatestMetrics
+  phase_stats: Record<string, { total: number; completed: number }>
+}
+
+export interface CalendarData {
+  [date: string]: { total: number; completed: number; skipped: number }
+}
+
+// ===== 医生端 =====
+export interface DoctorRehabOverview {
+  plan: RehabPlan
+  phase_stats: Record<string, { total: number; completed: number }>
+  metrics: RehabMetric[]
+  journals: RehabJournal[]
+  achievement_count: number
+}

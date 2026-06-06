@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { rehabPlanService } from '@/services/rehabPlan'
 import type { RehabPlan, RehabTask } from '@/types'
 import {
@@ -174,6 +175,11 @@ async function handleCancelPlan() {
       cancelButtonText: '再想想',
       type: 'warning',
     })
+  } catch {
+    return // 用户点了取消
+  }
+
+  try {
     const res = await rehabPlanService.cancelPlan(activePlan.value.id)
     if (res.data.success) {
       activePlan.value = null
@@ -183,7 +189,7 @@ async function handleCancelPlan() {
       ElMessage.success('康复计划已取消')
     }
   } catch {
-    // user cancelled
+    ElMessage.error('取消康复计划失败，请稍后重试')
   }
 }
 

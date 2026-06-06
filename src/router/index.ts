@@ -47,8 +47,40 @@ const router = createRouter({
         },
         {
           path: 'rehab',
-          name: 'PatientRehab',
-          component: () => import('@/views/patient/RehabPlanView.vue'),
+          component: () => import('@/views/rehab/RehabLayout.vue'),
+          redirect: { name: 'RehabDashboard' },
+          children: [
+            {
+              path: '',
+              name: 'RehabDashboard',
+              component: () => import('@/views/rehab/RehabDashboard.vue'),
+            },
+            {
+              path: 'calendar',
+              name: 'RehabCalendar',
+              component: () => import('@/views/rehab/RehabCalendar.vue'),
+            },
+            {
+              path: 'metrics',
+              name: 'RehabMetrics',
+              component: () => import('@/views/rehab/RehabMetrics.vue'),
+            },
+            {
+              path: 'exercises',
+              name: 'RehabExercise',
+              component: () => import('@/views/rehab/RehabExercise.vue'),
+            },
+            {
+              path: 'journal',
+              name: 'RehabJournal',
+              component: () => import('@/views/rehab/RehabJournal.vue'),
+            },
+            {
+              path: 'achievements',
+              name: 'RehabAchievements',
+              component: () => import('@/views/rehab/RehabAchievements.vue'),
+            },
+          ],
         },
         {
           path: 'messages',
@@ -95,6 +127,11 @@ const router = createRouter({
           path: 'statistics',
           name: 'DoctorStatistics',
           component: () => import('@/views/doctor/StatisticsView.vue'),
+        },
+        {
+          path: 'patients/:username/rehab',
+          name: 'DoctorPatientRehab',
+          component: () => import('@/views/doctor/PatientRehabView.vue'),
         },
       ],
     },
