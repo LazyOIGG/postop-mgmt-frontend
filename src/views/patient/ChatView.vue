@@ -4,6 +4,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { chatService } from '@/services/chat'
+import { kgService } from '@/services/kg'
+import type { KGSuggestItem } from '@/types'
 import { multimodalService } from '@/services/multimodal'
 import { healthService } from '@/services/health'
 import { useWebSocket } from '@/composables/useWebSocket'
@@ -16,6 +18,8 @@ const chatStore = useChatStore()
 
 const inputText = ref('')
 const isStreaming = ref(false)
+const suggestLoading = ref(false)
+const suggestCache = ref<Map<string, KGSuggestItem[]>>(new Map())
 const showSessions = ref(false)
 const messagesContainer = ref<HTMLElement>()
 
@@ -81,6 +85,50 @@ watch(lastMessage, (data: any) => {
 })
 
 let messageAbort: AbortController | null = null
+
+// ── Autocomplete ──────────────────────────────────────────────────
+
+async function querySearch(query: string, cb: (results: Array<{ value: string; label: string; labelTag: string }>) => void) {
+  if (!query || query.trim().length < 1) {
+    cb([])
+    return
+  }
+
+  // Cache hit — avoid duplicate API calls while typing
+  const cacheKey = query.trim()
+  const cached = suggestCache.value.get(cacheKey)
+  if (cached) {
+    cb(cached.map(e => ({ value: e.name, label: e.name, labelTag: e.label })))
+    return
+  }
+
+  suggestLoading.value = true
+  try {
+    const res = await kgService.search(query.trim(), { page_size: 8 })
+    const items = res.data?.entities ?? []
+    // Cache the result
+    if (items.length > 0) {
+      suggestCache.value.set(cacheKey, items)
+      // Limit cache size
+      if (suggestCache.value.size > 50) {
+        const firstKey = suggestCache.value.keys().next().value
+        if (firstKey) suggestCache.value.delete(firstKey)
+      }
+    }
+    cb(items.map(e => ({ value: e.name, label: e.name, labelTag: e.label })))
+  } catch {
+    cb([])
+  } finally {
+    suggestLoading.value = false
+  }
+}
+
+function handleAutocompleteSelect(item: { value: string; label: string; labelTag: string }) {
+  inputText.value = item.value
+  sendMessage()
+}
+
+// ── Message ───────────────────────────────────────────────────────
 
 async function sendMessage() {
   const text = inputText.value.trim()
@@ -446,15 +494,26 @@ async function playTTS(text: string, index: number) {
           <el-icon v-else :size="18"><VideoPause /></el-icon>
         </el-button>
 
-        <!-- Text input -->
-        <el-input
+        <!-- Text input with autocomplete -->
+        <el-autocomplete
           v-model="inputText"
-          :placeholder="isRecording ? `录音中 ${formatTime(recordingSeconds)}...` : '输入您的问题...'"
+          :fetch-suggestions="querySearch"
+          :debounce="300"
+          :trigger-on-focus="false"
+          :placeholder="isRecording ? `录音中 ${formatTime(recordingSeconds)}...` : '输入疾病、药品、症状...'"
           size="large"
           class="chat-input"
           :disabled="isRecording"
+          :loading="suggestLoading"
+          @select="handleAutocompleteSelect"
           @keyup.enter="sendMessage"
         >
+          <template #default="{ item }">
+            <div class="suggest-item">
+              <el-tag size="small" type="info" class="suggest-tag">{{ item.labelTag }}</el-tag>
+              <span class="suggest-name">{{ item.value }}</span>
+            </div>
+          </template>
           <template #suffix>
             <el-button
               type="primary"
@@ -466,7 +525,7 @@ async function playTTS(text: string, index: number) {
               发送
             </el-button>
           </template>
-        </el-input>
+        </el-autocomplete>
       </div>
 
       <!-- Recording indicator -->
@@ -742,6 +801,35 @@ async function playTTS(text: string, index: number) {
 .chat-input {
   flex: 1;
   --el-input-border-radius: 24px;
+}
+
+/* ── Autocomplete dropdown ── */
+.suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.suggest-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.suggest-name {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.el-autocomplete-suggestion__list) {
+  max-height: 320px;
+}
+
+:deep(.el-autocomplete-suggestion li) {
+  padding: 8px 16px;
 }
 
 .recording-bar {
