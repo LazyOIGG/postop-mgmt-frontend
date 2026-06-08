@@ -52,6 +52,9 @@ export const rehabPlanService = {
   getExercises(params?: { phase?: string; category?: string; surgery_type?: string; difficulty?: string; search?: string }) {
     return api.get('/api/v1/rehab-exercises', { params })
   },
+  getAAOSExercises(surgeryType: string) {
+    return api.get(`/api/v1/rehab-exercises/aaos/${encodeURIComponent(surgeryType || '膝关节锻炼')}`)
+  },
   getExerciseDetail(id: number) {
     return api.get(`/api/v1/rehab-exercises/${id}`)
   },

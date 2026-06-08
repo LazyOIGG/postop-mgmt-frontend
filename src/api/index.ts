@@ -10,7 +10,7 @@ function getRequestKey(config: any): string {
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 30000,
+  timeout: 120000,
 })
 
 // ===== 请求拦截：自动附加 token =====
