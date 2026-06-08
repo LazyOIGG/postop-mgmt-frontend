@@ -194,6 +194,25 @@ export interface ApiError {
   message: string
 }
 
+// ===== 知识图谱搜索 =====
+export interface KGSuggestItem {
+  name: string
+  label: string
+  match_type: 'exact' | 'fuzzy'
+}
+
+export interface KGSearchResponse {
+  success: boolean
+  query: string
+  source: 'fast_path' | 'text2cypher' | 'none'
+  entities: KGSuggestItem[]
+  results: Array<Record<string, unknown>>
+  graph: { nodes: Array<{ id: string; name: string; labels: string[] }>; edges: Array<{ source: string; target: string; type: string }> } | null
+  count: number
+  intent?: string
+  entity?: string
+}
+
 // ===== 系统统计 =====
 export interface SystemStats {
   total_users: number

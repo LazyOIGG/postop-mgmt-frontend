@@ -14,6 +14,7 @@ declare module 'vue' {
     AchievementPopup: typeof import('./src/components/rehab/AchievementPopup.vue')['default']
     AvatarDoctor: typeof import('./src/components/AvatarDoctor.vue')['default']
     AvatarPatient: typeof import('./src/components/AvatarPatient.vue')['default']
+    ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
